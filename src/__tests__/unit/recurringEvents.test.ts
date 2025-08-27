@@ -141,3 +141,85 @@ describe('매주 반복', () => {
     }
   });
 });
+
+describe('매월 반복', () => {
+  it('TC-006: 2025-01-15부터 2025-05-15까지 매월 반복 일정을 생성한다', () => {
+    // Given
+    const config = {
+      startDate: '2025-01-15',
+      endDate: '2025-05-15',
+      repeatType: 'monthly' as RepeatType,
+      maxOccurrences: 10,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+
+    // Then
+    expect(events).toHaveLength(5);
+    expect(events[0].date).toBe('2025-01-15');
+    expect(events[4].date).toBe('2025-05-15');
+
+    // 매월 같은 날짜 확인
+    for (let i = 0; i < events.length; i++) {
+      const eventDate = new Date(events[i].date);
+      expect(eventDate.getDate()).toBe(15); // 매월 15일
+    }
+  });
+
+  it('TC-007: 월간 계산 로직의 정확성과 경계값 처리를 검증한다', () => {
+    // Given
+    const config = {
+      startDate: '2025-01-15',
+      endDate: '2025-12-31',
+      repeatType: 'monthly' as RepeatType,
+      maxOccurrences: 10,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+
+    // Then
+    expect(events).toHaveLength(10); // maxOccurrences 제한
+    expect(events[9].date).toBe('2025-10-15'); // 10개월 후
+
+    // 모든 일정이 매월 같은 날짜에 생성됨
+    for (let i = 0; i < events.length; i++) {
+      const eventDate = new Date(events[i].date);
+      expect(eventDate.getDate()).toBe(15); // 매월 15일
+    }
+  });
+
+  it('TC-008: 월말과 연말 경계에서의 월간 반복 처리를 검증한다', () => {
+    // Given
+    const config = {
+      startDate: '2025-01-31',
+      endDate: '2025-06-30',
+      repeatType: 'monthly' as RepeatType,
+      maxOccurrences: 10,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+
+    // Then
+    expect(events).toHaveLength(6);
+    expect(events[0].date).toBe('2025-01-31');
+    expect(events[5].date).toBe('2025-06-30');
+
+    // 디버깅: 생성된 모든 날짜 출력
+    console.log('생성된 날짜들:');
+    events.forEach((event, index) => {
+      console.log(`${index + 1}월: ${event.date}`);
+    });
+
+    // 2월, 4월, 6월은 해당 월의 마지막 날에 생성됨
+    const febEvent = events.find((e) => e.date.startsWith('2025-02'));
+    const aprEvent = events.find((e) => e.date.startsWith('2025-04'));
+    const junEvent = events.find((e) => e.date.startsWith('2025-06'));
+
+    expect(febEvent?.date).toBe('2025-02-28'); // 2월은 28일
+    expect(aprEvent?.date).toBe('2025-04-30'); // 4월은 30일
+    expect(junEvent?.date).toBe('2025-06-30'); // 6월은 30일
+  });
+});
