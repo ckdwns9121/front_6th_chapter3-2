@@ -87,11 +87,30 @@ function generateMonthlyRecurringEvents(
   let month = start.getUTCMonth(); // 0-11
   let count = 0;
 
+  // ---------- 31일 처리 헬퍼 함수 ----------
+  const shouldSkipMonth = (startDay: number, daysInMonth: number): boolean => {
+    return startDay === 31 && daysInMonth < 31;
+  };
+
+  const moveToNextMonth = (): void => {
+    month += 1;
+    if (month > 11) {
+      month = 0;
+      year += 1;
+    }
+  };
+
   while (true) {
     if (count >= maxOccurrences) break;
 
     // 대상 월의 일수
     const dim = daysInMonthUTC(year, month);
+
+    // 31일 처리: 31일에 시작한 경우 31일이 없는 달은 건너뛰기
+    if (shouldSkipMonth(startDay, dim)) {
+      moveToNextMonth();
+      continue;
+    }
 
     // 말일 앵커 유지 or min(원래 일, 대상 월 일수)
     const day = startIsEOM ? dim : Math.min(startDay, dim);
@@ -179,3 +198,5 @@ function daysInMonthUTC(year: number, monthZeroBased: number): number {
 function isEndOfMonthUTC(d: Date): boolean {
   return d.getUTCDate() === daysInMonthUTC(d.getUTCFullYear(), d.getUTCMonth());
 }
+
+

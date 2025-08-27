@@ -191,9 +191,9 @@ describe('매월 반복', () => {
   });
 
   it('TC-008: 월말과 연말 경계에서의 월간 반복 처리를 검증한다', () => {
-    // Given
+    // Given - 30일로 시작하여 월말 앵커 유지 테스트
     const config = {
-      startDate: '2025-01-31',
+      startDate: '2025-01-30',
       endDate: '2025-06-30',
       repeatType: 'monthly' as RepeatType,
       maxOccurrences: 10,
@@ -204,7 +204,7 @@ describe('매월 반복', () => {
 
     // Then
     expect(events).toHaveLength(6);
-    expect(events[0].date).toBe('2025-01-31');
+    expect(events[0].date).toBe('2025-01-30');
     expect(events[5].date).toBe('2025-06-30');
 
     // 디버깅: 생성된 모든 날짜 출력
@@ -213,14 +213,12 @@ describe('매월 반복', () => {
       console.log(`${index + 1}월: ${event.date}`);
     });
 
-    // 2월, 4월, 6월은 해당 월의 마지막 날에 생성됨
+    // 2월, 4월은 해당 월의 마지막 날에 생성됨 (월말 앵커 유지)
     const febEvent = events.find((e) => e.date.startsWith('2025-02'));
     const aprEvent = events.find((e) => e.date.startsWith('2025-04'));
-    const junEvent = events.find((e) => e.date.startsWith('2025-06'));
 
     expect(febEvent?.date).toBe('2025-02-28'); // 2월은 28일
     expect(aprEvent?.date).toBe('2025-04-30'); // 4월은 30일
-    expect(junEvent?.date).toBe('2025-06-30'); // 6월은 30일
   });
 });
 
@@ -316,6 +314,31 @@ describe('매년 반복', () => {
       const eventDate = new Date(event.date);
       expect(eventDate.getDate()).toBe(28);
       expect(eventDate.getMonth()).toBe(1); // 2월
+    });
+  });
+});
+
+describe('31일 처리 엣지 케이스', () => {
+  it('TC-101: 31일이 있는 달에만 생성한다', () => {
+    // Given
+    const config = {
+      startDate: '2025-01-31',
+      endDate: '2025-12-31',
+      repeatType: 'monthly' as RepeatType,
+      maxOccurrences: 10,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+
+    // Then
+    expect(events).toHaveLength(7);
+
+    const expectedMonths = [1, 3, 5, 7, 8, 10, 12];
+    events.forEach((event, index) => {
+      const eventDate = new Date(event.date);
+      expect(eventDate.getDate()).toBe(31);
+      expect(eventDate.getMonth() + 1).toBe(expectedMonths[index]);
     });
   });
 });
