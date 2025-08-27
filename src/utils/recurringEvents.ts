@@ -9,6 +9,8 @@ export function generateRecurringEvents(config: RecurringEventConfig): Recurring
     return generateWeeklyRecurringEvents(startDate, endDate, maxOccurrences);
   } else if (repeatType === 'monthly') {
     return generateMonthlyRecurringEvents(startDate, endDate, maxOccurrences);
+  } else if (repeatType === 'yearly') {
+    return generateYearlyRecurringEvents(startDate, endDate, maxOccurrences);
   }
 
   return [];
@@ -95,6 +97,33 @@ function generateMonthlyRecurringEvents(
   return events;
 }
 
+function generateYearlyRecurringEvents(
+  startDate: string,
+  endDate: string,
+  maxOccurrences: number
+): RecurringEvent[] {
+  const events: RecurringEvent[] = [];
+  let currentDate = new Date(startDate);
+  const endDateObj = new Date(endDate);
+  let occurrenceCount = 0;
+
+  while (currentDate <= endDateObj && occurrenceCount < maxOccurrences) {
+    events.push({
+      id: `yearly-${occurrenceCount}-${currentDate.toISOString()}`,
+      date: currentDate.toISOString().split('T')[0],
+      isRecurring: true,
+      recurringSeriesId: `yearly-series-${startDate}`,
+    });
+
+    occurrenceCount++;
+
+    // 다음 년도 계산
+    currentDate = addYears(currentDate, 1);
+  }
+
+  return events;
+}
+
 // 월 추가 헬퍼 함수
 function addMonths(date: Date, months: number): Date {
   const newDate = new Date(date);
@@ -113,4 +142,23 @@ function addMonths(date: Date, months: number): Date {
   }
 
   return newDate;
+}
+
+function addYears(date: Date, years: number): Date {
+  const newDate = new Date(date);
+  const originalMonth = date.getMonth();
+  const originalDay = date.getDate();
+
+  newDate.setFullYear(newDate.getFullYear() + years);
+
+  // 윤년 29일 처리: 원래 날짜가 2월 29일이고 대상 해가 윤년이 아닌 경우
+  if (originalMonth === 1 && originalDay === 29 && !isLeapYear(newDate.getFullYear())) {
+    newDate.setDate(28); // 2월 28일로 설정
+  }
+
+  return newDate;
+}
+
+function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 }

@@ -223,3 +223,99 @@ describe('매월 반복', () => {
     expect(junEvent?.date).toBe('2025-06-30'); // 6월은 30일
   });
 });
+
+describe('매년 반복', () => {
+  it('TC-008: 2025-01-15부터 2029-01-15까지 매년 반복 일정을 생성한다', () => {
+    // Given
+    const config = {
+      startDate: '2025-01-15',
+      endDate: '2029-01-15',
+      repeatType: 'yearly' as RepeatType,
+      maxOccurrences: 10,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+
+    // Then
+    expect(events).toHaveLength(5);
+    expect(events[0].date).toBe('2025-01-15');
+    expect(events[4].date).toBe('2029-01-15');
+
+    // 매년 같은 날짜 확인
+    for (let i = 0; i < events.length; i++) {
+      const eventDate = new Date(events[i].date);
+      expect(eventDate.getDate()).toBe(15); // 매년 1월 15일
+      expect(eventDate.getMonth()).toBe(0); // 매년 1월
+    }
+  });
+
+  it('TC-009: 연간 계산 로직의 정확성과 경계값 처리를 검증한다', () => {
+    // Given
+    const config = {
+      startDate: '2025-01-15',
+      endDate: '2035-12-31',
+      repeatType: 'yearly' as RepeatType,
+      maxOccurrences: 10,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+
+    // Then
+    expect(events).toHaveLength(10); // maxOccurrences 제한
+    expect(events[9].date).toBe('2034-01-15'); // 10년 후
+
+    // 모든 일정이 매년 같은 날짜에 생성됨
+    for (let i = 0; i < events.length; i++) {
+      const eventDate = new Date(events[i].date);
+      expect(eventDate.getDate()).toBe(15); // 매년 1월 15일
+      expect(eventDate.getMonth()).toBe(0); // 매년 1월
+    }
+  });
+
+  it('TC-010: 윤년 29일 처리의 정확성을 검증한다', () => {
+    // Given
+    const config = {
+      startDate: '2024-02-29', // 윤년
+      endDate: '2032-02-29',
+      repeatType: 'yearly' as RepeatType,
+      maxOccurrences: 10,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+
+    // Then
+    expect(events).toHaveLength(9); // 2024-2032년까지 9개
+    expect(events[0].date).toBe('2024-02-29'); // 2024년 (윤년)
+    expect(events[4].date).toBe('2028-02-29'); // 2028년 (윤년)
+    expect(events[8].date).toBe('2032-02-29'); // 2032년 (윤년)
+
+    // 디버깅: 생성된 모든 날짜 출력
+    console.log('생성된 날짜들:');
+    events.forEach((event, index) => {
+      console.log(`${index + 1}: ${event.date}`);
+    });
+
+    // 윤년이 아닌 해에는 2월 28일에 생성됨
+    const nonLeapYearEvents = events.filter((e) => {
+      const year = new Date(e.date).getFullYear();
+      return (
+        year === 2025 ||
+        year === 2026 ||
+        year === 2027 ||
+        year === 2029 ||
+        year === 2030 ||
+        year === 2031
+      );
+    });
+
+    // 윤년이 아닌 해의 이벤트는 2월 28일에 생성되어야 함
+    nonLeapYearEvents.forEach((event) => {
+      const eventDate = new Date(event.date);
+      expect(eventDate.getDate()).toBe(28);
+      expect(eventDate.getMonth()).toBe(1); // 2월
+    });
+  });
+});
