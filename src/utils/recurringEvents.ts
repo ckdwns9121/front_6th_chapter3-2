@@ -76,22 +76,44 @@ function generateMonthlyRecurringEvents(
   maxOccurrences: number
 ): RecurringEvent[] {
   const events: RecurringEvent[] = [];
-  let currentDate = new Date(startDate);
-  const endDateObj = new Date(endDate);
-  let occurrenceCount = 0;
 
-  while (currentDate <= endDateObj && occurrenceCount < maxOccurrences) {
+  const start = parseISODateUTC(startDate); // 00:00:00Z
+  const end = parseISODateUTC(endDate); // 00:00:00Z
+
+  const startDay = start.getUTCDate();
+  const startIsEOM = isEndOfMonthUTC(start);
+
+  let year = start.getUTCFullYear();
+  let month = start.getUTCMonth(); // 0-11
+  let count = 0;
+
+  while (true) {
+    if (count >= maxOccurrences) break;
+
+    // 대상 월의 일수
+    const dim = daysInMonthUTC(year, month);
+
+    // 말일 앵커 유지 or min(원래 일, 대상 월 일수)
+    const day = startIsEOM ? dim : Math.min(startDay, dim);
+
+    const occurrence = new Date(Date.UTC(year, month, day)); // 항상 UTC 기반
+    if (occurrence.getTime() > end.getTime()) break;
+
     events.push({
-      id: `monthly-${occurrenceCount}-${currentDate.toISOString()}`,
-      date: currentDate.toISOString().split('T')[0],
+      id: `monthly-${count}-${occurrence.toISOString()}`,
+      date: formatDateUTC(occurrence), // 'YYYY-MM-DD' (UTC)
       isRecurring: true,
       recurringSeriesId: `monthly-series-${startDate}`,
     });
 
-    occurrenceCount++;
+    // 다음 달
+    month += 1;
+    if (month > 11) {
+      month = 0;
+      year += 1;
+    }
 
-    // 다음 달 계산
-    currentDate = addMonths(currentDate, 1);
+    count += 1;
   }
 
   return events;
@@ -124,24 +146,27 @@ function generateYearlyRecurringEvents(
   return events;
 }
 
-// 월 추가 헬퍼 함수
-function addMonths(date: Date, months: number): Date {
-  const newDate = new Date(date);
-  const originalDay = date.getDate(); // 원래 날짜의 일자 저장
+// ---------- UTC 유틸 ----------
+function parseISODateUTC(yyyyMmDd: string): Date {
+  // 'YYYY-MM-DD' → 항상 UTC 자정
+  const [y, m, d] = yyyyMmDd.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+}
 
-  // 더 정확한 월간 계산을 위해 setFullYear와 setMonth 사용
-  const targetYear = newDate.getFullYear();
-  const targetMonth = newDate.getMonth() + months;
+function formatDateUTC(d: Date): string {
+  const y = d.getUTCFullYear();
+  const m = `${d.getUTCMonth() + 1}`.padStart(2, '0');
+  const dd = `${d.getUTCDate()}`.padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
 
-  newDate.setFullYear(targetYear, targetMonth, 1); // 해당 월의 1일로 설정
-  newDate.setDate(originalDay); // 원래 일자로 설정
+function daysInMonthUTC(year: number, monthZeroBased: number): number {
+  // 다음달 0일 = 해당달 말일
+  return new Date(Date.UTC(year, monthZeroBased + 1, 0)).getUTCDate();
+}
 
-  // 31일 처리: 원래 날짜가 31일이고 대상 월이 30일 이하인 경우
-  if (originalDay === 31 && newDate.getDate() !== 31) {
-    newDate.setDate(0); // 해당 월의 마지막 날로 설정
-  }
-
-  return newDate;
+function isEndOfMonthUTC(d: Date): boolean {
+  return d.getUTCDate() === daysInMonthUTC(d.getUTCFullYear(), d.getUTCMonth());
 }
 
 function addYears(date: Date, years: number): Date {
