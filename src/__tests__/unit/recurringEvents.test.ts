@@ -385,3 +385,84 @@ describe('31일 처리 엣지 케이스', () => {
     // 2월은 윤년이어도 31일은 없으므로 건너뛰기
   });
 });
+
+describe('윤년 29일 처리 엣지 케이스', () => {
+  it('TC-201: 윤년에만 2월 29일에 생성한다', () => {
+    // Given
+    const config = {
+      startDate: '2024-02-29',
+      endDate: '2032-12-31',
+      repeatType: 'yearly' as RepeatType,
+      maxOccurrences: 10,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+
+    // Then
+    expect(events).toHaveLength(3);
+
+    const expectedYears = [2024, 2028, 2032];
+    events.forEach((event, index) => {
+      const eventDate = new Date(event.date);
+      expect(eventDate.getMonth()).toBe(1); // 2월 (0-based)
+      expect(eventDate.getDate()).toBe(29);
+      expect(eventDate.getFullYear()).toBe(expectedYears[index]);
+    });
+  });
+
+  it('TC-202: 윤년과 평년의 경계에서의 처리', () => {
+    // Given
+    const config = {
+      startDate: '2024-02-29',
+      endDate: '2025-12-31',
+      repeatType: 'yearly' as RepeatType,
+      maxOccurrences: 10,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+
+    // Then
+    expect(events).toHaveLength(1);
+    expect(events[0].date).toBe('2024-02-29');
+    // 2025년은 평년이므로 건너뛰기
+  });
+
+  it('TC-203: 100년 규칙 적용', () => {
+    // Given
+    const config = {
+      startDate: '2000-02-29', // 2000년은 윤년 (400으로 나누어떨어짐)
+      endDate: '2100-12-31',
+      repeatType: 'yearly' as RepeatType,
+      maxOccurrences: 10,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+
+    // Then
+    expect(events).toHaveLength(1);
+    expect(events[0].date).toBe('2000-02-29');
+    // 2100년은 100년 규칙으로 윤년 아님
+  });
+
+  it('TC-204: 400년 규칙 적용', () => {
+    // Given
+    const config = {
+      startDate: '2000-02-29',
+      endDate: '2400-12-31',
+      repeatType: 'yearly' as RepeatType,
+      maxOccurrences: 10,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+
+    // Then
+    expect(events).toHaveLength(2);
+    expect(events[0].date).toBe('2000-02-29');
+    expect(events[1].date).toBe('2400-02-29');
+    // 둘 다 400으로 나누어떨어지는 윤년
+  });
+});

@@ -154,7 +154,18 @@ function generateYearlyRecurringEvents(
   let year = start.getUTCFullYear();
   let count = 0;
 
+  // ---------- 윤년 29일 처리 헬퍼 함수 ----------
+  const shouldSkipLeapYear = (month: number, day: number, year: number): boolean => {
+    return month === 1 && day === 29 && !isLeapYear(year);
+  };
+
   while (count < maxOccurrences) {
+    // 윤년 2월 29일 처리: 2월 29일에 시작한 경우 윤년이 아닌 해는 건너뛰기
+    if (shouldSkipLeapYear(anchorMonth, anchorDay, year)) {
+      year += 1;
+      continue;
+    }
+
     // 해당 해 anchorMonth의 말일
     const dim = daysInMonthUTC(year, anchorMonth);
     const day = Math.min(anchorDay, dim); // 2/29 → 평년 28, 윤년 29 유지
@@ -197,4 +208,11 @@ function daysInMonthUTC(year: number, monthZeroBased: number): number {
 
 function isEndOfMonthUTC(d: Date): boolean {
   return d.getUTCDate() === daysInMonthUTC(d.getUTCFullYear(), d.getUTCMonth());
+}
+
+// ---------- 윤년 판별 함수 ----------
+function isLeapYear(year: number): boolean {
+  // 4로 나누어떨어지고, 100으로 나누어떨어지지 않거나
+  // 400으로 나누어떨어지는 해가 윤년
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 }
