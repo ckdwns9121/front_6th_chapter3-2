@@ -125,22 +125,33 @@ function generateYearlyRecurringEvents(
   maxOccurrences: number
 ): RecurringEvent[] {
   const events: RecurringEvent[] = [];
-  let currentDate = new Date(startDate);
-  const endDateObj = new Date(endDate);
-  let occurrenceCount = 0;
 
-  while (currentDate <= endDateObj && occurrenceCount < maxOccurrences) {
+  const start = parseISODateUTC(startDate); // 00:00:00Z
+  const end = parseISODateUTC(endDate); // 00:00:00Z
+
+  const anchorMonth = start.getUTCMonth(); // 0-11
+  const anchorDay = start.getUTCDate(); // e.g. 29 (윤년 시작)
+
+  let year = start.getUTCFullYear();
+  let count = 0;
+
+  while (count < maxOccurrences) {
+    // 해당 해 anchorMonth의 말일
+    const dim = daysInMonthUTC(year, anchorMonth);
+    const day = Math.min(anchorDay, dim); // 2/29 → 평년 28, 윤년 29 유지
+
+    const occurrence = new Date(Date.UTC(year, anchorMonth, day));
+    if (occurrence.getTime() > end.getTime()) break;
+
     events.push({
-      id: `yearly-${occurrenceCount}-${currentDate.toISOString()}`,
-      date: currentDate.toISOString().split('T')[0],
+      id: `yearly-${count}-${occurrence.toISOString()}`,
+      date: formatDateUTC(occurrence), // 'YYYY-MM-DD'
       isRecurring: true,
       recurringSeriesId: `yearly-series-${startDate}`,
     });
 
-    occurrenceCount++;
-
-    // 다음 년도 계산
-    currentDate = addYears(currentDate, 1);
+    year += 1;
+    count += 1;
   }
 
   return events;
@@ -167,23 +178,4 @@ function daysInMonthUTC(year: number, monthZeroBased: number): number {
 
 function isEndOfMonthUTC(d: Date): boolean {
   return d.getUTCDate() === daysInMonthUTC(d.getUTCFullYear(), d.getUTCMonth());
-}
-
-function addYears(date: Date, years: number): Date {
-  const newDate = new Date(date);
-  const originalMonth = date.getMonth();
-  const originalDay = date.getDate();
-
-  newDate.setFullYear(newDate.getFullYear() + years);
-
-  // 윤년 29일 처리: 원래 날짜가 2월 29일이고 대상 해가 윤년이 아닌 경우
-  if (originalMonth === 1 && originalDay === 29 && !isLeapYear(newDate.getFullYear())) {
-    newDate.setDate(28); // 2월 28일로 설정
-  }
-
-  return newDate;
-}
-
-function isLeapYear(year: number): boolean {
-  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 }
