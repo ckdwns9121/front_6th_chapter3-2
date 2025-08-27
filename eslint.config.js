@@ -76,22 +76,14 @@ export default [
       'react/prop-types': 'off',
       ...reactHooksPlugin.configs.recommended.rules,
 
-      // Import rules
-      'import/order': [
-        'error',
-        {
-          groups: ['builtin', 'external', ['parent', 'sibling'], 'index'],
-          alphabetize: {
-            order: 'asc',
-            caseInsensitive: true,
-          },
-          'newlines-between': 'always',
-        },
-      ],
-
       // Prettier rules
       ...prettierConfig.rules,
-      'prettier/prettier': 'error',
+      'prettier/prettier': [
+        'error',
+        {
+          endOfLine: 'auto',
+        },
+      ],
 
       // Storybook rules
       ...storybookPlugin.configs.recommended.rules,
