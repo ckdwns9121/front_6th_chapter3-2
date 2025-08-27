@@ -1,4 +1,8 @@
-import { generateRecurringEvents, modifySingleEvent } from '../../utils/recurringEvents';
+import {
+  generateRecurringEvents,
+  modifySingleEvent,
+  deleteSingleEvent,
+} from '../../utils/recurringEvents';
 import { RepeatType, YearlyFeb29Policy } from '../../types/recurringEvents';
 
 describe('매일 반복', () => {
@@ -494,5 +498,59 @@ describe('단일 수정 엣지 케이스', () => {
     expect(modifiedEvents[2].modificationDate).toBe('2025-02-01');
     expect(modifiedEvents[0].isModified).toBe(false);
     expect(modifiedEvents[0].modificationDate).toBeUndefined();
+  });
+});
+
+describe('단일 삭제 엣지 케이스', () => {
+  it('TC-401: 기본 단일 삭제 테스트', () => {
+    // Given
+    const config = {
+      startDate: '2025-01-15',
+      endDate: '2025-12-31',
+      repeatType: 'monthly' as RepeatType,
+      maxOccurrences: 10,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+    const deletedEvent = deleteSingleEvent(events, 2);
+
+    // Then
+    expect(events).toHaveLength(10); // 원본 배열은 변경되지 않음
+    expect(deletedEvent).toBeDefined();
+    expect(deletedEvent.id).toBe('monthly-2-2025-03-15T00:00:00.000Z');
+    expect(deletedEvent.isDeleted).toBe(true);
+    expect(deletedEvent.deletionDate).toBeDefined();
+  });
+
+  it('TC-402: 시리즈 유지 테스트', () => {
+    // Given
+    const config = {
+      startDate: '2025-01-01',
+      endDate: '2025-01-10',
+      repeatType: 'daily' as RepeatType,
+      maxOccurrences: 5,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+    const deletedEvent = deleteSingleEvent(events, 1);
+
+    // 삭제된 이벤트와 원본 이벤트를 비교
+    const originalEvent = events[1];
+
+    // Then
+    expect(events).toHaveLength(5); // 원본 배열은 변경되지 않음
+    expect(deletedEvent.isDeleted).toBe(true);
+    expect(deletedEvent.recurringSeriesId).toBe('daily-series-2025-01-01');
+    expect(deletedEvent.deletionDate).toBeDefined();
+
+    // 원본 이벤트는 변경되지 않음
+    expect(originalEvent.isDeleted).toBeUndefined();
+    expect(originalEvent.deletionDate).toBeUndefined();
+
+    // 삭제된 이벤트는 원본과 동일한 기본 정보를 가짐
+    expect(deletedEvent.id).toBe(originalEvent.id);
+    expect(deletedEvent.date).toBe(originalEvent.date);
   });
 });

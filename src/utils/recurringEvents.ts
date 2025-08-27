@@ -287,3 +287,72 @@ export function toggleEventRecurring(events: RecurringEvent[], index: number): R
     isRecurring: !currentEvent.isRecurring,
   });
 }
+
+// ---------- 단일 삭제 함수 ----------
+export function deleteSingleEvent(events: RecurringEvent[], index: number): RecurringEvent {
+  // 입력 검증
+  if (!Array.isArray(events)) {
+    throw new Error('Events must be an array');
+  }
+
+  if (index < 0 || index >= events.length) {
+    throw new Error(`Invalid event index: ${index}. Array length: ${events.length}`);
+  }
+
+  const originalEvent = events[index];
+
+  // 삭제된 이벤트 생성 (불변성 유지)
+  const deletedEvent: RecurringEvent = {
+    ...originalEvent,
+    isDeleted: true,
+    deletionDate: new Date().toISOString().split('T')[0],
+  };
+
+  // 원본 배열은 변경하지 않고 삭제된 이벤트만 반환
+  return deletedEvent;
+}
+
+// ---------- 단일 삭제 유틸리티 함수들 ----------
+export function restoreDeletedEvent(events: RecurringEvent[], index: number): RecurringEvent {
+  return modifySingleEvent(events, index, {
+    isDeleted: false,
+    deletionDate: undefined,
+  });
+}
+
+export function getActiveEvents(events: RecurringEvent[]): RecurringEvent[] {
+  return events.filter((event) => !event.isDeleted);
+}
+
+export function getDeletedEvents(events: RecurringEvent[]): RecurringEvent[] {
+  return events.filter((event) => event.isDeleted);
+}
+
+// ---------- 고급 삭제 관리 함수들 ----------
+export function bulkDeleteEvents(events: RecurringEvent[], indices: number[]): RecurringEvent[] {
+  // 중복 제거 및 정렬
+  const uniqueIndices = [...new Set(indices)].sort((a, b) => a - b);
+
+  // 유효성 검증
+  uniqueIndices.forEach((index) => {
+    if (index < 0 || index >= events.length) {
+      throw new Error(`Invalid event index: ${index}. Array length: ${events.length}`);
+    }
+  });
+
+  return uniqueIndices.map((index) => deleteSingleEvent(events, index));
+}
+
+export function getEventStatusSummary(events: RecurringEvent[]): {
+  total: number;
+  active: number;
+  deleted: number;
+  modified: number;
+} {
+  return {
+    total: events.length,
+    active: events.filter((event) => !event.isDeleted).length,
+    deleted: events.filter((event) => event.isDeleted).length,
+    modified: events.filter((event) => event.isModified && !event.isDeleted).length,
+  };
+}

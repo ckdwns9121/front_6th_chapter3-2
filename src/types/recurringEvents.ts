@@ -24,4 +24,6 @@ export interface RecurringEvent {
   recurringSeriesId: string;
   isModified?: boolean;
   modificationDate?: string;
+  isDeleted?: boolean;
+  deletionDate?: string;
 }
