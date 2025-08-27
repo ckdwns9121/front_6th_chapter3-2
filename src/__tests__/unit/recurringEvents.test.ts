@@ -1,4 +1,4 @@
-import { generateRecurringEvents } from '../../utils/recurringEvents';
+import { generateRecurringEvents, modifySingleEvent } from '../../utils/recurringEvents';
 import { RepeatType, YearlyFeb29Policy } from '../../types/recurringEvents';
 
 describe('매일 반복', () => {
@@ -421,5 +421,78 @@ describe('윤년 29일 처리 엣지 케이스', () => {
     expect(events[0].date).toBe('2000-02-29');
     expect(events[1].date).toBe('2400-02-29');
     // 둘 다 400으로 나누어떨어지는 윤년
+  });
+});
+
+describe('단일 수정 엣지 케이스', () => {
+  it('TC-301: 기본 단일 수정 테스트', () => {
+    // Given
+    const config = {
+      startDate: '2025-01-15',
+      endDate: '2025-12-31',
+      repeatType: 'monthly' as RepeatType,
+      maxOccurrences: 10,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+    const modifiedEvent = modifySingleEvent(events, 2, { title: '수정된 제목' });
+
+    // Then
+    expect(events).toHaveLength(10);
+    expect(modifiedEvent.title).toBe('수정된 제목');
+    expect(modifiedEvent.isRecurring).toBe(true);
+    expect(modifiedEvent.recurringSeriesId).toBe('monthly-series-2025-01-15');
+  });
+
+  it('TC-302: 속성 변경 테스트', () => {
+    // Given
+    const config = {
+      startDate: '2025-01-01',
+      endDate: '2025-01-10',
+      repeatType: 'daily' as RepeatType,
+      maxOccurrences: 5,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+    const modifiedEvent = {
+      ...events[1],
+      title: '새로운 제목',
+      description: '새로운 설명',
+      isRecurring: false, // 단일 수정으로 변경
+    };
+
+    // Then
+    expect(events).toHaveLength(5);
+    expect(modifiedEvent.title).toBe('새로운 제목');
+    expect(modifiedEvent.description).toBe('새로운 설명');
+    expect(modifiedEvent.isRecurring).toBe(false);
+    expect(modifiedEvent.recurringSeriesId).toBe('daily-series-2025-01-01');
+  });
+
+  it('TC-303: UI 상태 확인 테스트', () => {
+    // Given
+    const config = {
+      startDate: '2025-01-15',
+      endDate: '2029-01-15',
+      repeatType: 'yearly' as RepeatType,
+      maxOccurrences: 5,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+    const modifiedEvents = events.map((event, index) => ({
+      ...event,
+      isModified: index === 2, // 3번째 이벤트만 수정됨
+      modificationDate: index === 2 ? '2025-02-01' : undefined,
+    }));
+
+    // Then
+    expect(events).toHaveLength(5);
+    expect(modifiedEvents[2].isModified).toBe(true);
+    expect(modifiedEvents[2].modificationDate).toBe('2025-02-01');
+    expect(modifiedEvents[0].isModified).toBe(false);
+    expect(modifiedEvents[0].modificationDate).toBeUndefined();
   });
 });

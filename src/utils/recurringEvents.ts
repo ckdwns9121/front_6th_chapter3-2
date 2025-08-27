@@ -230,3 +230,60 @@ function isLeapYear(year: number): boolean {
   // 400으로 나누어떨어지는 해가 윤년
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 }
+
+// ---------- 단일 수정 함수 ----------
+export function modifySingleEvent(
+  events: RecurringEvent[],
+  index: number,
+  modifications: Partial<RecurringEvent>
+): RecurringEvent {
+  // 입력 검증
+  if (!Array.isArray(events)) {
+    throw new Error('Events must be an array');
+  }
+
+  if (index < 0 || index >= events.length) {
+    throw new Error(`Invalid event index: ${index}. Array length: ${events.length}`);
+  }
+
+  if (!modifications || typeof modifications !== 'object') {
+    throw new Error('Modifications must be a valid object');
+  }
+
+  const originalEvent = events[index];
+
+  // 수정된 이벤트 생성 (불변성 유지)
+  const modifiedEvent: RecurringEvent = {
+    ...originalEvent,
+    ...modifications,
+    isModified: true,
+    modificationDate: new Date().toISOString().split('T')[0],
+  };
+
+  // 원본 배열은 변경하지 않고 수정된 이벤트만 반환
+  return modifiedEvent;
+}
+
+// ---------- 단일 수정 유틸리티 함수들 ----------
+export function modifyEventTitle(
+  events: RecurringEvent[],
+  index: number,
+  newTitle: string
+): RecurringEvent {
+  return modifySingleEvent(events, index, { title: newTitle });
+}
+
+export function modifyEventDescription(
+  events: RecurringEvent[],
+  index: number,
+  newDescription: string
+): RecurringEvent {
+  return modifySingleEvent(events, index, { description: newDescription });
+}
+
+export function toggleEventRecurring(events: RecurringEvent[], index: number): RecurringEvent {
+  const currentEvent = events[index];
+  return modifySingleEvent(events, index, {
+    isRecurring: !currentEvent.isRecurring,
+  });
+}

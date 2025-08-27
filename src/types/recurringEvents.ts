@@ -18,6 +18,10 @@ export interface RecurringEventConfig {
 export interface RecurringEvent {
   id: string;
   date: string;
+  title?: string;
+  description?: string;
   isRecurring: boolean;
   recurringSeriesId: string;
+  isModified?: boolean;
+  modificationDate?: string;
 }
