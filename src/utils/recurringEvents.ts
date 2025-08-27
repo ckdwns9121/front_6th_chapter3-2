@@ -198,5 +198,3 @@ function daysInMonthUTC(year: number, monthZeroBased: number): number {
 function isEndOfMonthUTC(d: Date): boolean {
   return d.getUTCDate() === daysInMonthUTC(d.getUTCFullYear(), d.getUTCMonth());
 }
-
-

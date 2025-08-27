@@ -341,4 +341,47 @@ describe('31일 처리 엣지 케이스', () => {
       expect(eventDate.getMonth() + 1).toBe(expectedMonths[index]);
     });
   });
+
+  it('TC-102: 31일이 없는 달에서 건너뛰기 처리', () => {
+    // Given
+    const config = {
+      startDate: '2025-01-31',
+      endDate: '2025-03-31',
+      repeatType: 'monthly' as RepeatType,
+      maxOccurrences: 10,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+
+    // Then
+    expect(events).toHaveLength(2);
+    expect(events[0].date).toBe('2025-01-31');
+    expect(events[1].date).toBe('2025-03-31');
+    // 2월은 31일이 없으므로 건너뛰기
+  });
+
+  it('TC-103: 윤년 고려한 31일 처리', () => {
+    // Given
+    const config = {
+      startDate: '2024-01-31',
+      endDate: '2024-12-31',
+      repeatType: 'monthly' as RepeatType,
+      maxOccurrences: 10,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+
+    // Then
+    expect(events).toHaveLength(7);
+
+    const expectedMonths = [1, 3, 5, 7, 8, 10, 12];
+    events.forEach((event, index) => {
+      const eventDate = new Date(event.date);
+      expect(eventDate.getDate()).toBe(31);
+      expect(eventDate.getMonth() + 1).toBe(expectedMonths[index]);
+    });
+    // 2월은 윤년이어도 31일은 없으므로 건너뛰기
+  });
 });
