@@ -356,3 +356,66 @@ export function getEventStatusSummary(events: RecurringEvent[]): {
     modified: events.filter((event) => event.isModified && !event.isDeleted).length,
   };
 }
+
+// ---------- 반복 아이콘 표시 함수들 ----------
+export interface RecurringIconInfo {
+  shouldShow: boolean;
+  iconType?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  tooltip?: string;
+  color?: string;
+}
+
+export function getRecurringIconInfo(event: RecurringEvent): RecurringIconInfo {
+  // 반복 일정이 아니거나 삭제된 경우 아이콘 숨김
+  if (!event.isRecurring || event.isDeleted) {
+    return { shouldShow: false };
+  }
+
+  // 반복 유형별 아이콘 설정 매핑
+  const iconConfigs = {
+    daily: { iconType: 'daily' as const, tooltip: '매일 반복', color: '#10B981' },
+    weekly: { iconType: 'weekly' as const, tooltip: '매주 반복', color: '#8B5CF6' },
+    monthly: { iconType: 'monthly' as const, tooltip: '매월 반복', color: '#3B82F6' },
+    yearly: { iconType: 'yearly' as const, tooltip: '매년 반복', color: '#F59E0B' },
+  };
+
+  // recurringSeriesId에서 반복 유형 추출
+  const seriesId = event.recurringSeriesId;
+
+  for (const [type, config] of Object.entries(iconConfigs)) {
+    if (seriesId.startsWith(`${type}-series-`)) {
+      return {
+        shouldShow: true,
+        ...config,
+      };
+    }
+  }
+
+  // 알 수 없는 반복 유형 (기본값)
+  return {
+    shouldShow: true,
+    iconType: 'monthly',
+    tooltip: '반복 일정',
+    color: '#6B7280',
+  };
+}
+
+// ---------- 반복 아이콘 유틸리티 함수들 ----------
+export function getIconClassName(iconType: string): string {
+  const baseClass = 'recurring-icon';
+  const typeClass = `icon-${iconType}`;
+  return `${baseClass} ${typeClass}`;
+}
+
+export function getIconStyle(color: string): Record<string, string> {
+  return {
+    color: color,
+    fontSize: '16px',
+    marginRight: '8px',
+    cursor: 'pointer',
+  };
+}
+
+export function shouldShowRecurringIcon(event: RecurringEvent): boolean {
+  return getRecurringIconInfo(event).shouldShow;
+}

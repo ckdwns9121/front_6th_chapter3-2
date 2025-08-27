@@ -2,6 +2,7 @@ import {
   generateRecurringEvents,
   modifySingleEvent,
   deleteSingleEvent,
+  getRecurringIconInfo,
 } from '../../utils/recurringEvents';
 import { RepeatType, YearlyFeb29Policy } from '../../types/recurringEvents';
 
@@ -552,5 +553,91 @@ describe('단일 삭제 엣지 케이스', () => {
     // 삭제된 이벤트는 원본과 동일한 기본 정보를 가짐
     expect(deletedEvent.id).toBe(originalEvent.id);
     expect(deletedEvent.date).toBe(originalEvent.date);
+  });
+});
+
+describe('반복 아이콘 표시 엣지 케이스', () => {
+  it('TC-501: 기본 반복 아이콘 표시 테스트', () => {
+    // Given
+    const config = {
+      startDate: '2025-01-15',
+      endDate: '2025-12-31',
+      repeatType: 'monthly' as RepeatType,
+      maxOccurrences: 10,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+    const iconInfo = getRecurringIconInfo(events[0]);
+
+    // Then
+    expect(iconInfo.shouldShow).toBe(true);
+    expect(iconInfo.iconType).toBe('monthly');
+    expect(iconInfo.tooltip).toBe('매월 반복');
+    expect(iconInfo.color).toBe('#3B82F6');
+  });
+
+  it('TC-502: 아이콘 숨김 테스트', () => {
+    // Given
+    const config = {
+      startDate: '2025-01-01',
+      endDate: '2025-01-10',
+      repeatType: 'daily' as RepeatType,
+      maxOccurrences: 5,
+    };
+
+    // When
+    const events = generateRecurringEvents(config);
+    const modifiedEvent = modifySingleEvent(events, 1, { isRecurring: false });
+    const iconInfo = getRecurringIconInfo(modifiedEvent);
+
+    // Then
+    expect(iconInfo.shouldShow).toBe(false);
+    expect(iconInfo.iconType).toBeUndefined();
+    expect(iconInfo.tooltip).toBeUndefined();
+  });
+
+  it('TC-503: 다양한 반복 유형별 아이콘 테스트', () => {
+    // Given
+    const dailyConfig = {
+      startDate: '2025-01-01',
+      endDate: '2025-01-05',
+      repeatType: 'daily' as RepeatType,
+      maxOccurrences: 5,
+    };
+    const weeklyConfig = {
+      startDate: '2025-01-01',
+      endDate: '2025-01-29',
+      repeatType: 'weekly' as RepeatType,
+      maxOccurrences: 5,
+    };
+    const yearlyConfig = {
+      startDate: '2025-01-15',
+      endDate: '2029-01-15',
+      repeatType: 'yearly' as RepeatType,
+      maxOccurrences: 5,
+    };
+
+    // When
+    const dailyEvents = generateRecurringEvents(dailyConfig);
+    const weeklyEvents = generateRecurringEvents(weeklyConfig);
+    const yearlyEvents = generateRecurringEvents(yearlyConfig);
+
+    const dailyIcon = getRecurringIconInfo(dailyEvents[0]);
+    const weeklyIcon = getRecurringIconInfo(weeklyEvents[0]);
+    const yearlyIcon = getRecurringIconInfo(yearlyEvents[0]);
+
+    // Then
+    expect(dailyIcon.iconType).toBe('daily');
+    expect(dailyIcon.tooltip).toBe('매일 반복');
+    expect(dailyIcon.color).toBe('#10B981');
+
+    expect(weeklyIcon.iconType).toBe('weekly');
+    expect(weeklyIcon.tooltip).toBe('매주 반복');
+    expect(weeklyIcon.color).toBe('#8B5CF6');
+
+    expect(yearlyIcon.iconType).toBe('yearly');
+    expect(yearlyIcon.tooltip).toBe('매년 반복');
+    expect(yearlyIcon.color).toBe('#F59E0B');
   });
 });
