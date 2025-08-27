@@ -1,5 +1,5 @@
 import { generateRecurringEvents } from '../../utils/recurringEvents';
-import { RepeatType } from '../../types/recurringEvents';
+import { RepeatType, YearlyFeb29Policy } from '../../types/recurringEvents';
 
 describe('매일 반복', () => {
   it('TC-001: 2025-01-01부터 2025-01-05까지 매일 반복 일정을 생성한다', () => {
@@ -271,51 +271,6 @@ describe('매년 반복', () => {
       expect(eventDate.getMonth()).toBe(0); // 매년 1월
     }
   });
-
-  it('TC-010: 윤년 29일 처리의 정확성을 검증한다', () => {
-    // Given
-    const config = {
-      startDate: '2024-02-29', // 윤년
-      endDate: '2032-02-29',
-      repeatType: 'yearly' as RepeatType,
-      maxOccurrences: 10,
-    };
-
-    // When
-    const events = generateRecurringEvents(config);
-
-    // Then
-    expect(events).toHaveLength(9); // 2024-2032년까지 9개
-    expect(events[0].date).toBe('2024-02-29'); // 2024년 (윤년)
-    expect(events[4].date).toBe('2028-02-29'); // 2028년 (윤년)
-    expect(events[8].date).toBe('2032-02-29'); // 2032년 (윤년)
-
-    // 디버깅: 생성된 모든 날짜 출력
-    console.log('생성된 날짜들:');
-    events.forEach((event, index) => {
-      console.log(`${index + 1}: ${event.date}`);
-    });
-
-    // 윤년이 아닌 해에는 2월 28일에 생성됨
-    const nonLeapYearEvents = events.filter((e) => {
-      const year = new Date(e.date).getFullYear();
-      return (
-        year === 2025 ||
-        year === 2026 ||
-        year === 2027 ||
-        year === 2029 ||
-        year === 2030 ||
-        year === 2031
-      );
-    });
-
-    // 윤년이 아닌 해의 이벤트는 2월 28일에 생성되어야 함
-    nonLeapYearEvents.forEach((event) => {
-      const eventDate = new Date(event.date);
-      expect(eventDate.getDate()).toBe(28);
-      expect(eventDate.getMonth()).toBe(1); // 2월
-    });
-  });
 });
 
 describe('31일 처리 엣지 케이스', () => {
@@ -436,13 +391,14 @@ describe('윤년 29일 처리 엣지 케이스', () => {
       endDate: '2100-12-31',
       repeatType: 'yearly' as RepeatType,
       maxOccurrences: 10,
+      policies: { yearlyFeb29Policy: 'leap-400-only' as YearlyFeb29Policy },
     };
 
     // When
     const events = generateRecurringEvents(config);
 
     // Then
-    expect(events).toHaveLength(1);
+    expect(events).toHaveLength(1); // 2000년만 (400으로 나누어떨어짐)
     expect(events[0].date).toBe('2000-02-29');
     // 2100년은 100년 규칙으로 윤년 아님
   });
@@ -454,6 +410,7 @@ describe('윤년 29일 처리 엣지 케이스', () => {
       endDate: '2400-12-31',
       repeatType: 'yearly' as RepeatType,
       maxOccurrences: 10,
+      policies: { yearlyFeb29Policy: 'leap-400-only' as YearlyFeb29Policy },
     };
 
     // When

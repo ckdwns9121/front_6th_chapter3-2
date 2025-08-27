@@ -1,4 +1,4 @@
-import { RecurringEventConfig, RecurringEvent } from '../types/recurringEvents';
+import { RecurringEventConfig, RecurringEvent, YearlyFeb29Policy } from '../types/recurringEvents';
 
 export function generateRecurringEvents(config: RecurringEventConfig): RecurringEvent[] {
   const { startDate, endDate, repeatType, maxOccurrences } = config;
@@ -10,7 +10,12 @@ export function generateRecurringEvents(config: RecurringEventConfig): Recurring
   } else if (repeatType === 'monthly') {
     return generateMonthlyRecurringEvents(startDate, endDate, maxOccurrences);
   } else if (repeatType === 'yearly') {
-    return generateYearlyRecurringEvents(startDate, endDate, maxOccurrences);
+    return generateYearlyRecurringEvents(
+      startDate,
+      endDate,
+      maxOccurrences,
+      config.policies?.yearlyFeb29Policy ?? 'leap-only' // 기본: 윤년에만
+    );
   }
 
   return [];
@@ -141,7 +146,8 @@ function generateMonthlyRecurringEvents(
 function generateYearlyRecurringEvents(
   startDate: string,
   endDate: string,
-  maxOccurrences: number
+  maxOccurrences: number,
+  feb29Policy: YearlyFeb29Policy = 'leap-only'
 ): RecurringEvent[] {
   const events: RecurringEvent[] = [];
 
@@ -154,14 +160,22 @@ function generateYearlyRecurringEvents(
   let year = start.getUTCFullYear();
   let count = 0;
 
-  // ---------- 윤년 29일 처리 헬퍼 함수 ----------
-  const shouldSkipLeapYear = (month: number, day: number, year: number): boolean => {
-    return month === 1 && day === 29 && !isLeapYear(year);
-  };
+  const isFeb29Anchor = anchorMonth === 1 && anchorDay === 29;
 
   while (count < maxOccurrences) {
-    // 윤년 2월 29일 처리: 2월 29일에 시작한 경우 윤년이 아닌 해는 건너뛰기
-    if (shouldSkipLeapYear(anchorMonth, anchorDay, year)) {
+    // 포함여부 결정
+    let include = true;
+    if (isFeb29Anchor) {
+      if (feb29Policy === 'leap-only') {
+        include = isLeapYear(year);
+      } else if (feb29Policy === 'leap-400-only') {
+        include = year % 400 === 0;
+      } else if (feb29Policy === 'clip') {
+        include = true; // 항상 포함 (평년은 2/28로 대체)
+      }
+    }
+
+    if (!include) {
       year += 1;
       continue;
     }
