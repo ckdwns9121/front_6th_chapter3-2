@@ -164,7 +164,7 @@ describe('useEventOperations', () => {
       expect(uniqueIds.size).toBe(recurringEvents.length);
 
       // 모든 이벤트가 같은 recurringSeriesId를 가지고 있는지 확인
-      const seriesIds = recurringEvents.map((event) => (event as any).recurringSeriesId);
+      const seriesIds = recurringEvents.map((event) => (event as Event).recurringSeriesId);
       const uniqueSeriesIds = new Set(seriesIds);
       expect(uniqueSeriesIds.size).toBe(1);
     });
