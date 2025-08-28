@@ -20,4 +20,6 @@ export interface EventForm {
 
 export interface Event extends EventForm {
   id: string;
+  isRecurring?: boolean;
+  recurringSeriesId?: string;
 }

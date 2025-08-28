@@ -2,6 +2,7 @@ import { useSnackbar } from 'notistack';
 import { useEffect, useState } from 'react';
 
 import { Event, EventForm } from '../types';
+import { generateRepeatDates } from '../utils/recurringEvents';
 
 export const useEventOperations = (editing: boolean, onSave?: () => void) => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -21,24 +22,94 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
     }
   };
 
+  const createRecurringEvents = (eventData: EventForm): Event[] => {
+    if (eventData.repeat.type === 'none') {
+      // 반복이 아닌 경우 단일 이벤트 생성
+      const newEvent: Event = {
+        id: crypto.randomUUID(),
+        title: eventData.title,
+        date: eventData.date,
+        startTime: eventData.startTime,
+        endTime: eventData.endTime,
+        description: eventData.description,
+        location: eventData.location,
+        category: eventData.category,
+        repeat: eventData.repeat,
+        notificationTime: eventData.notificationTime,
+        isRecurring: false,
+        recurringSeriesId: '',
+      };
+      return [newEvent];
+    }
+
+    // 반복 일정인 경우
+    const recurringSeriesId = crypto.randomUUID();
+    const repeatDates = generateRepeatDates(
+      eventData.date,
+      eventData.repeat.type,
+      eventData.repeat.interval || 1,
+      eventData.repeat.endDate || '2025-10-30' // 최대 종료일
+    );
+
+    return repeatDates.map((date) => ({
+      id: crypto.randomUUID(),
+      title: eventData.title,
+      date,
+      startTime: eventData.startTime,
+      endTime: eventData.endTime,
+      description: eventData.description,
+      location: eventData.location,
+      category: eventData.category,
+      repeat: eventData.repeat,
+      notificationTime: eventData.notificationTime,
+      isRecurring: true,
+      recurringSeriesId,
+    }));
+  };
+
   const saveEvent = async (eventData: Event | EventForm) => {
     try {
       let response;
       if (editing) {
+        // 수정 모드: 기존 이벤트 업데이트
         response = await fetch(`/api/events/${(eventData as Event).id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(eventData),
         });
       } else {
-        response = await fetch('/api/events', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(eventData),
-        });
+        // 생성 모드: 반복 일정 처리
+        if ('repeat' in eventData && eventData.repeat.type !== 'none') {
+          // 반복 일정 생성
+          const recurringEvents = createRecurringEvents(eventData);
+
+          // 반복 일정을 한 번에 저장
+          const response = await fetch('/api/events-list', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ events: recurringEvents }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to save recurring events');
+          }
+
+          // 로컬 상태 업데이트 후 fetchEvents 호출
+          await fetchEvents();
+          onSave?.();
+          enqueueSnackbar('반복 일정이 추가되었습니다.', { variant: 'success' });
+          return;
+        } else {
+          // 일반 일정 생성
+          response = await fetch('/api/events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(eventData),
+          });
+        }
       }
 
-      if (!response.ok) {
+      if (!response?.ok) {
         throw new Error('Failed to save event');
       }
 
