@@ -4,10 +4,9 @@ export const generateRepeatDates = (
   startDate: string,
   repeatType: RepeatType,
   interval: number,
-  endDate: string
+  repeatEndDate?: string
 ): string[] => {
   const dates: string[] = [];
-  const end = new Date(endDate);
   const start = new Date(startDate);
   const originalDay = start.getDate();
   const originalMonth = start.getMonth();
@@ -23,12 +22,22 @@ export const generateRepeatDates = (
     if (repeatType === 'daily') {
       const nextDate = new Date(start);
       nextDate.setDate(nextDate.getDate() + interval * dates.length);
-      if (nextDate > end) break;
+
+      // 반복 종료일 확인
+      if (repeatEndDate && nextDate > new Date(repeatEndDate)) {
+        break; // 반복 종료일 도달
+      }
+
       dates.push(nextDate.toISOString().split('T')[0]);
     } else if (repeatType === 'weekly') {
       const nextDate = new Date(start);
       nextDate.setDate(nextDate.getDate() + 7 * interval * dates.length);
-      if (nextDate > end) break;
+
+      // 반복 종료일 확인
+      if (repeatEndDate && nextDate > new Date(repeatEndDate)) {
+        break; // 반복 종료일 도달
+      }
+
       dates.push(nextDate.toISOString().split('T')[0]);
     } else if (repeatType === 'monthly') {
       // 다음 달 계산
@@ -51,7 +60,11 @@ export const generateRepeatDates = (
       }
 
       const nextDate = new Date(nextYear, nextMonth, originalDay);
-      if (nextDate > end) break;
+
+      // 반복 종료일 확인
+      if (repeatEndDate && nextDate > new Date(repeatEndDate)) {
+        break; // 반복 종료일 도달
+      }
 
       dates.push(nextDate.toISOString().split('T')[0]);
       currentMonth = nextMonth;
@@ -68,9 +81,19 @@ export const generateRepeatDates = (
       }
 
       const nextDate = new Date(nextYear, originalMonth, originalDay);
-      if (nextDate > end) break;
+
+      // 반복 종료일 확인
+      if (repeatEndDate && nextDate > new Date(repeatEndDate)) {
+        break; // 반복 종료일 도달
+      }
+
       dates.push(nextDate.toISOString().split('T')[0]);
       currentYear = nextYear;
+    }
+
+    // 무한 루프 방지를 위한 기본 최대 반복 횟수 확인
+    if (dates.length >= 1000) {
+      break;
     }
   }
 
