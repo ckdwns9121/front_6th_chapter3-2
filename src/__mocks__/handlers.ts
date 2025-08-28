@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw';
 
-import { events } from '../__mocks__/response/events.json' assert { type: 'json' };
+import eventsData from '../__mocks__/response/events.json' assert { type: 'json' };
+const { events } = eventsData;
 import { Event } from '../types';
 
 export const handlers = [
@@ -35,5 +36,17 @@ export const handlers = [
     }
 
     return new HttpResponse(null, { status: 404 });
+  }),
+
+  // 반복 이벤트 리스트 생성
+  http.post('/api/events-list', async ({ request }) => {
+    const { events: newEvents } = (await request.json()) as { events: Event[] };
+
+    newEvents.forEach((event) => {
+      event.id = String(events.length + 1);
+      events.push(event);
+    });
+
+    return HttpResponse.json(newEvents, { status: 201 });
   }),
 ];
