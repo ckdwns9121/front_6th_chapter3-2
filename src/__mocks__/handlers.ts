@@ -49,4 +49,16 @@ export const handlers = [
 
     return HttpResponse.json(newEvents, { status: 201 });
   }),
+  http.delete('/api/events-list', async ({ request }) => {
+    const { events: deletedEvents } = (await request.json()) as { events: Event[] };
+
+    deletedEvents.forEach((event) => {
+      events.splice(
+        events.findIndex((e) => e.id === event.id),
+        1
+      );
+    });
+
+    return new HttpResponse(null, { status: 204 });
+  }),
 ];
