@@ -1,12 +1,4 @@
-import {
-  Notifications,
-  ChevronLeft,
-  ChevronRight,
-  Delete,
-  Edit,
-  Close,
-  Repeat,
-} from '@mui/icons-material';
+import { Notifications, ChevronLeft, ChevronRight, Delete, Edit, Close } from '@mui/icons-material';
 import {
   Alert,
   AlertTitle,
@@ -43,7 +35,8 @@ import { useEventForm } from './hooks/useEventForm.ts';
 import { useEventOperations } from './hooks/useEventOperations.ts';
 import { useNotifications } from './hooks/useNotifications.ts';
 import { useSearch } from './hooks/useSearch.ts';
-import { Event, EventForm, RepeatType } from './types';
+// import { Event, EventForm, RepeatType } from './types';
+import { Event, EventForm } from './types';
 import {
   formatDate,
   formatMonth,
@@ -84,28 +77,21 @@ function App() {
     isRepeating,
     setIsRepeating,
     repeatType,
-    setRepeatType,
+    // setRepeatType,
     repeatInterval,
-    setRepeatInterval,
+    // setRepeatInterval,
     repeatEndDate,
-    setRepeatEndDate,
+    // setRepeatEndDate,
     notificationTime,
     setNotificationTime,
     startTimeError,
     endTimeError,
     editingEvent,
     setEditingEvent,
-    generatedEvents,
-    isGenerating,
-    generationError,
     handleStartTimeChange,
     handleEndTimeChange,
     resetForm,
     editEvent,
-    generateRecurringSeries,
-    previewRecurringSeries,
-    clearGeneratedEvents,
-    validateRecurringSettings,
   } = useEventForm();
 
   const { events, saveEvent, deleteEvent } = useEventOperations(Boolean(editingEvent), () =>
@@ -132,50 +118,6 @@ function App() {
       return;
     }
 
-    // 반복 일정인 경우 생성된 반복 일정들을 모두 저장
-    if (isRepeating && generatedEvents.length > 0) {
-      try {
-        for (const recurringEvent of generatedEvents) {
-          const eventData: Event | EventForm = {
-            id: undefined, // 새로운 이벤트
-            title: recurringEvent.title,
-            date: recurringEvent.date,
-            startTime: recurringEvent.startTime,
-            endTime: recurringEvent.endTime,
-            description: recurringEvent.description,
-            location: recurringEvent.location,
-            category: recurringEvent.category,
-            repeat: {
-              type: recurringEvent.repeat.type,
-              interval: recurringEvent.repeat.interval,
-              endDate: recurringEvent.repeat.endDate || undefined,
-            },
-            notificationTime: recurringEvent.notificationTime,
-          };
-
-          const overlapping = findOverlappingEvents(eventData, events);
-          if (overlapping.length > 0) {
-            enqueueSnackbar(`${recurringEvent.date} 일정과 겹칩니다.`, { variant: 'warning' });
-            continue; // 겹치는 일정은 건너뛰고 계속 진행
-          }
-
-          await saveEvent(eventData);
-        }
-
-        enqueueSnackbar(`${generatedEvents.length}개의 반복 일정이 생성되었습니다.`, {
-          variant: 'success',
-        });
-        clearGeneratedEvents();
-        resetForm();
-        return;
-      } catch (error) {
-        console.error('Error in addOrUpdateEvent:', error);
-        enqueueSnackbar('반복 일정 생성 중 오류가 발생했습니다.', { variant: 'error' });
-        return;
-      }
-    }
-
-    // 단일 일정 저장 (기존 로직)
     const eventData: Event | EventForm = {
       id: editingEvent ? editingEvent.id : undefined,
       title,
@@ -236,43 +178,40 @@ function App() {
                     <Typography variant="body2" fontWeight="bold">
                       {date.getDate()}
                     </Typography>
-                    {getEventsForDay(filteredEvents, currentDate, date.getDate()).map((event) => {
-                      const isNotified = notifiedEvents.includes(event.id);
-                      const isRecurring = event.repeat.type !== 'none';
-                      return (
-                        <Box
-                          key={event.id}
-                          sx={{
-                            p: 0.5,
-                            my: 0.5,
-                            backgroundColor: isNotified
-                              ? '#ffebee'
-                              : isRecurring
-                              ? '#e3f2fd'
-                              : '#f5f5f5',
-                            borderRadius: 1,
-                            fontWeight: isNotified ? 'bold' : 'normal',
-                            color: isNotified ? '#d32f2f' : isRecurring ? '#1976d2' : 'inherit',
-                            minHeight: '18px',
-                            width: '100%',
-                            overflow: 'hidden',
-                            border: isRecurring ? '1px solid #1976d2' : 'none',
-                          }}
-                        >
-                          <Stack direction="row" spacing={1} alignItems="center">
-                            {isNotified && <Notifications fontSize="small" />}
-                            {isRecurring && <Repeat fontSize="small" />}
-                            <Typography
-                              variant="caption"
-                              noWrap
-                              sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}
-                            >
-                              {event.title}
-                            </Typography>
-                          </Stack>
-                        </Box>
-                      );
-                    })}
+                    {filteredEvents
+                      .filter(
+                        (event) => new Date(event.date).toDateString() === date.toDateString()
+                      )
+                      .map((event) => {
+                        const isNotified = notifiedEvents.includes(event.id);
+                        return (
+                          <Box
+                            key={event.id}
+                            sx={{
+                              p: 0.5,
+                              my: 0.5,
+                              backgroundColor: isNotified ? '#ffebee' : '#f5f5f5',
+                              borderRadius: 1,
+                              fontWeight: isNotified ? 'bold' : 'normal',
+                              color: isNotified ? '#d32f2f' : 'inherit',
+                              minHeight: '18px',
+                              width: '100%',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              {isNotified && <Notifications fontSize="small" />}
+                              <Typography
+                                variant="caption"
+                                noWrap
+                                sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}
+                              >
+                                {event.title}
+                              </Typography>
+                            </Stack>
+                          </Box>
+                        );
+                      })}
                   </TableCell>
                 ))}
               </TableRow>
@@ -330,36 +269,25 @@ function App() {
                                 {holiday}
                               </Typography>
                             )}
-                            {getEventsForDay(filteredEvents, currentDate, day).map((event) => {
+                            {getEventsForDay(filteredEvents, day).map((event) => {
                               const isNotified = notifiedEvents.includes(event.id);
-                              const isRecurring = event.repeat.type !== 'none';
                               return (
                                 <Box
                                   key={event.id}
                                   sx={{
                                     p: 0.5,
                                     my: 0.5,
-                                    backgroundColor: isNotified
-                                      ? '#ffebee'
-                                      : isRecurring
-                                      ? '#e3f2fd'
-                                      : '#f5f5f5',
+                                    backgroundColor: isNotified ? '#ffebee' : '#f5f5f5',
                                     borderRadius: 1,
                                     fontWeight: isNotified ? 'bold' : 'normal',
-                                    color: isNotified
-                                      ? '#d32f2f'
-                                      : isRecurring
-                                      ? '#1976d2'
-                                      : 'inherit',
+                                    color: isNotified ? '#d32f2f' : 'inherit',
                                     minHeight: '18px',
                                     width: '100%',
                                     overflow: 'hidden',
-                                    border: isRecurring ? '1px solid #1976d2' : 'none',
                                   }}
                                 >
                                   <Stack direction="row" spacing={1} alignItems="center">
                                     {isNotified && <Notifications fontSize="small" />}
-                                    {isRecurring && <Repeat fontSize="small" />}
                                     <Typography
                                       variant="caption"
                                       noWrap
@@ -509,8 +437,8 @@ function App() {
             </Select>
           </FormControl>
 
-          {/* 반복 일정 설정 */}
-          {isRepeating && (
+          {/* ! 반복은 8주차 과제에 포함됩니다. 구현하고 싶어도 참아주세요~ */}
+          {/* {isRepeating && (
             <Stack spacing={2}>
               <FormControl fullWidth>
                 <FormLabel>반복 유형</FormLabel>
@@ -546,97 +474,8 @@ function App() {
                   />
                 </FormControl>
               </Stack>
-
-              {/* 반복 일정 생성 및 미리보기 버튼 */}
-              <Stack direction="row" spacing={1}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={async () => {
-                    const errors = validateRecurringSettings();
-                    if (errors.length > 0) {
-                      enqueueSnackbar(errors[0], { variant: 'error' });
-                      return;
-                    }
-                    await generateRecurringSeries();
-                  }}
-                  disabled={isGenerating}
-                  startIcon={<Repeat />}
-                >
-                  {isGenerating ? '생성 중...' : '반복 일정 생성'}
-                </Button>
-                <Button
-                  variant="text"
-                  size="small"
-                  onClick={() => {
-                    const preview = previewRecurringSeries();
-                    if (preview.length > 0) {
-                      enqueueSnackbar(`${preview.length}개의 반복 일정이 생성됩니다.`, {
-                        variant: 'info',
-                      });
-                    } else {
-                      enqueueSnackbar('반복 설정을 확인해주세요.', { variant: 'warning' });
-                    }
-                  }}
-                >
-                  미리보기
-                </Button>
-              </Stack>
-
-              {/* 생성된 반복 일정 표시 */}
-              {generatedEvents.length > 0 && (
-                <Box
-                  sx={{
-                    p: 2,
-                    border: 1,
-                    borderColor: 'primary.main',
-                    borderRadius: 1,
-                    bgcolor: 'primary.50',
-                  }}
-                >
-                  <Typography variant="subtitle2" color="primary" gutterBottom>
-                    생성된 반복 일정 ({generatedEvents.length}개)
-                  </Typography>
-                  <Stack spacing={1} sx={{ maxHeight: 200, overflowY: 'auto' }}>
-                    {generatedEvents.slice(0, 5).map((event, index) => (
-                      <Box
-                        key={index}
-                        sx={{
-                          p: 1,
-                          bgcolor: 'white',
-                          borderRadius: 1,
-                          border: 1,
-                          borderColor: 'grey.300',
-                        }}
-                      >
-                        <Typography variant="caption" display="block">
-                          {event.date} {event.startTime}-{event.endTime}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {event.title}
-                        </Typography>
-                      </Box>
-                    ))}
-                    {generatedEvents.length > 5 && (
-                      <Typography variant="caption" color="text.secondary">
-                        ... 외 {generatedEvents.length - 5}개
-                      </Typography>
-                    )}
-                  </Stack>
-                  <Button size="small" variant="text" onClick={clearGeneratedEvents} sx={{ mt: 1 }}>
-                    초기화
-                  </Button>
-                </Box>
-              )}
-
-              {/* 에러 메시지 표시 */}
-              {generationError && (
-                <Alert severity="error" sx={{ fontSize: '0.875rem' }}>
-                  {generationError}
-                </Alert>
-              )}
             </Stack>
-          )}
+          )} */}
 
           <Button
             data-testid="event-submit-button"
