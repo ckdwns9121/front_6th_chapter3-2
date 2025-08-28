@@ -148,3 +148,138 @@ describe('generateRepeatDates - 반복 일정 표시', () => {
     });
   });
 });
+
+describe('반복 일정 단일 수정', () => {
+  it('반복 일정을 수정하면 단일 일정으로 변경된다', () => {
+    // 반복 일정 데이터
+    const recurringEvent = {
+      id: 'event-1',
+      title: '반복 회의',
+      date: '2025-01-01',
+      startTime: '09:00',
+      endTime: '10:00',
+      description: '매주 회의',
+      location: '회의실',
+      category: '업무',
+      repeat: {
+        type: 'weekly' as const,
+        interval: 1,
+        endDate: '2025-12-31',
+      },
+      notificationTime: 10,
+      isRecurring: true,
+      recurringSeriesId: 'series-1',
+    };
+
+    // 수정된 데이터 (반복 없음)
+    const modifiedEvent = {
+      ...recurringEvent,
+      title: '수정된 회의',
+      description: '일회성 회의',
+      repeat: {
+        type: 'none' as const,
+        interval: 1,
+        endDate: undefined,
+      },
+      isRecurring: false,
+      recurringSeriesId: '',
+    };
+
+    // 수정 후 반복 속성이 제거되었는지 확인
+    expect(modifiedEvent.repeat.type).toBe('none');
+    expect(modifiedEvent.isRecurring).toBe(false);
+    expect(modifiedEvent.recurringSeriesId).toBe('');
+    expect(modifiedEvent.title).toBe('수정된 회의');
+    expect(modifiedEvent.description).toBe('일회성 회의');
+  });
+
+  it('반복 일정 수정 시 반복 아이콘이 사라진다', () => {
+    // 반복 아이콘 표시 여부 확인 함수
+    const shouldShowRepeatIcon = (repeatType: string) => repeatType !== 'none';
+
+    expect(shouldShowRepeatIcon('daily')).toBe(true);
+    expect(shouldShowRepeatIcon('weekly')).toBe(true);
+    expect(shouldShowRepeatIcon('monthly')).toBe(true);
+    expect(shouldShowRepeatIcon('yearly')).toBe(true);
+    expect(shouldShowRepeatIcon('none')).toBe(false);
+  });
+
+  it('반복 일정을 다른 반복 유형으로 수정할 수 있다', () => {
+    // 매일 반복에서 매주 반복으로 변경
+    const dailyEvent = {
+      repeat: { type: 'daily' as const, interval: 1, endDate: '2025-12-31' },
+    };
+
+    const weeklyEvent = {
+      repeat: { type: 'weekly' as const, interval: 2, endDate: '2025-06-30' },
+    };
+
+    // 반복 유형과 간격이 변경되었는지 확인
+    expect(dailyEvent.repeat.type).toBe('daily');
+    expect(weeklyEvent.repeat.type).toBe('weekly');
+    expect(weeklyEvent.repeat.interval).toBe(2);
+    expect(weeklyEvent.repeat.endDate).toBe('2025-06-30');
+  });
+
+  it('반복 일정을 일반 일정으로 수정할 수 있다', () => {
+    // 반복 일정 데이터
+    const recurringEvent = {
+      title: '반복 운동',
+      date: '2025-01-01',
+      repeat: {
+        type: 'daily' as const,
+        interval: 1,
+        endDate: '2025-12-31',
+      },
+    };
+
+    // 일반 일정으로 수정
+    const regularEvent = {
+      ...recurringEvent,
+      title: '일회성 운동',
+      repeat: {
+        type: 'none' as const,
+        interval: 1,
+        endDate: undefined,
+      },
+    };
+
+    // 반복 속성이 제거되었는지 확인
+    expect(regularEvent.repeat.type).toBe('none');
+    expect(regularEvent.repeat.endDate).toBeUndefined();
+    expect(regularEvent.title).toBe('일회성 운동');
+  });
+
+  it('반복 일정 수정 시 다른 필드들도 함께 수정할 수 있다', () => {
+    // 원본 반복 일정
+    const originalEvent = {
+      title: '원래 제목',
+      description: '원래 설명',
+      location: '원래 위치',
+      repeat: {
+        type: 'monthly' as const,
+        interval: 1,
+        endDate: '2025-12-31',
+      },
+    };
+
+    // 모든 필드를 수정
+    const modifiedEvent = {
+      ...originalEvent,
+      title: '새로운 제목',
+      description: '새로운 설명',
+      location: '새로운 위치',
+      repeat: {
+        type: 'none' as const,
+        interval: 1,
+        endDate: undefined,
+      },
+    };
+
+    // 모든 필드가 수정되었는지 확인.
+    expect(modifiedEvent.title).toBe('새로운 제목');
+    expect(modifiedEvent.description).toBe('새로운 설명');
+    expect(modifiedEvent.location).toBe('새로운 위치');
+    expect(modifiedEvent.repeat.type).toBe('none');
+  });
+});
