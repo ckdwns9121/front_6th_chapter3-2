@@ -1,4 +1,9 @@
-import { RecurringEventConfig, RecurringEvent, YearlyFeb29Policy } from '../types/recurringEvents';
+import {
+  RecurringEventConfig,
+  RecurringEvent,
+  YearlyFeb29Policy,
+  Monthly31Policy,
+} from '../types/recurringEvents';
 
 export function generateRecurringEvents(config: RecurringEventConfig): RecurringEvent[] {
   const { startDate, endDate, repeatType, maxOccurrences } = config;
@@ -8,7 +13,12 @@ export function generateRecurringEvents(config: RecurringEventConfig): Recurring
   } else if (repeatType === 'weekly') {
     return generateWeeklyRecurringEvents(startDate, endDate, maxOccurrences);
   } else if (repeatType === 'monthly') {
-    return generateMonthlyRecurringEvents(startDate, endDate, maxOccurrences);
+    return generateMonthlyRecurringEvents(
+      startDate,
+      endDate,
+      maxOccurrences,
+      config.policies?.monthly31Policy ?? 'skip'
+    );
   } else if (repeatType === 'yearly') {
     return generateYearlyRecurringEvents(
       startDate,
@@ -78,7 +88,8 @@ function generateWeeklyRecurringEvents(
 function generateMonthlyRecurringEvents(
   startDate: string,
   endDate: string,
-  maxOccurrences: number
+  maxOccurrences: number,
+  monthly31Policy: Monthly31Policy = 'skip'
 ): RecurringEvent[] {
   const events: RecurringEvent[] = [];
 
@@ -94,6 +105,7 @@ function generateMonthlyRecurringEvents(
 
   // ---------- 31일 처리 헬퍼 함수 ----------
   const shouldSkipMonth = (startDay: number, daysInMonth: number): boolean => {
+    // 31일에 시작한 경우, 31일이 없는 달은 건너뛰기
     return startDay === 31 && daysInMonth < 31;
   };
 
@@ -131,12 +143,7 @@ function generateMonthlyRecurringEvents(
     });
 
     // 다음 달
-    month += 1;
-    if (month > 11) {
-      month = 0;
-      year += 1;
-    }
-
+    moveToNextMonth();
     count += 1;
   }
 
