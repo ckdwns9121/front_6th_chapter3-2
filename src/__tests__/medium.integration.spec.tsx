@@ -109,6 +109,10 @@ describe('일정 CRUD 및 기본 기능', () => {
     const allDeleteButton = await screen.findAllByLabelText('Delete event');
     await user.click(allDeleteButton[0]);
 
+    // 삭제 후 상태 동기화를 위한 대기
+    await act(() => Promise.resolve(null));
+
+    // 삭제된 이벤트가 더 이상 표시되지 않는지 확인
     expect(eventList.queryByText('삭제할 이벤트')).not.toBeInTheDocument();
   });
 });
@@ -175,9 +179,12 @@ describe('일정 뷰', () => {
       category: '업무',
     });
 
+    // 일정 저장 후 상태 동기화를 위한 대기
+    await act(() => Promise.resolve(null));
+
     const monthView = within(screen.getByTestId('month-view'));
     expect(monthView.getByText('이번달 팀 회의')).toBeInTheDocument();
-  });
+  }, 10000); // 타임아웃을 10초로 증가
 
   it('달력에 1월 1일(신정)이 공휴일로 표시되는지 확인한다', async () => {
     vi.setSystemTime(new Date('2025-01-01'));

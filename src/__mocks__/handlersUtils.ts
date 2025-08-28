@@ -139,15 +139,13 @@ export const setupMockHandlerRepeatCreation = () => {
     http.delete('/api/events-list', async ({ request }) => {
       try {
         const { eventIds } = (await request.json()) as { eventIds: string[] };
-        console.log('DELETE /api/events-list - 삭제 요청:', { eventIds });
 
         // globalMockEvents에서 해당 ID들을 가진 이벤트들 제거
-        const initialLength = globalMockEvents.length;
-        globalMockEvents = globalMockEvents.filter((event) => !eventIds.includes(event.id));
-        const deletedCount = initialLength - globalMockEvents.length;
-
-        console.log('DELETE /api/events-list - 삭제된 이벤트 수:', deletedCount);
-        console.log('DELETE /api/events-list - 업데이트된 globalMockEvents:', globalMockEvents);
+        for (let i = globalMockEvents.length - 1; i >= 0; i--) {
+          if (eventIds.includes(globalMockEvents[i].id)) {
+            globalMockEvents.splice(i, 1);
+          }
+        }
 
         return new HttpResponse(null, { status: 204 });
       } catch (error) {
@@ -232,6 +230,24 @@ export const setupMockHandlerDeletion = ({ isRepeat = false } = {}) => {
 
       mockEvents.splice(index, 1);
       return new HttpResponse(null, { status: 204 });
+    }),
+    // /api/events-list DELETE 엔드포인트 추가
+    http.delete('/api/events-list', async ({ request }) => {
+      try {
+        const { eventIds } = (await request.json()) as { eventIds: string[] };
+
+        // mockEvents에서 해당 ID들을 가진 이벤트들 제거
+        for (let i = mockEvents.length - 1; i >= 0; i--) {
+          if (eventIds.includes(mockEvents[i].id)) {
+            mockEvents.splice(i, 1);
+          }
+        }
+
+        return new HttpResponse(null, { status: 204 });
+      } catch (error) {
+        console.error('DELETE /api/events-list 에러:', error);
+        return new HttpResponse(null, { status: 500 });
+      }
     })
   );
 };

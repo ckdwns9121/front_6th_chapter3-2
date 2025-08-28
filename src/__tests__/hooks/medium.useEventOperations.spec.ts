@@ -243,6 +243,8 @@ describe('useEventOperations', () => {
     });
 
     it('반복 일정 삭제 시 해당 일정만 삭제한다', async () => {
+      setupMockHandlerRepeatCreation(); // 반복 일정 전용 목업 사용
+
       const { result } = renderHook(() => useEventOperations(false));
 
       // 먼저 반복 일정 생성
@@ -266,6 +268,11 @@ describe('useEventOperations', () => {
         await result.current.saveEvent(recurringEventData);
       });
 
+      // 상태 동기화를 위해 fetchEvents 명시적 호출
+      await act(async () => {
+        await result.current.fetchEvents();
+      });
+
       const initialEventCount = result.current.events.length;
 
       // 첫 번째 반복 일정만 삭제
@@ -277,6 +284,11 @@ describe('useEventOperations', () => {
 
       await act(async () => {
         await result.current.deleteEvent(firstEvent!.id);
+      });
+
+      // 삭제 후 상태 동기화
+      await act(async () => {
+        await result.current.fetchEvents();
       });
 
       // 전체 이벤트 수가 1개만 줄었는지 확인
