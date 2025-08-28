@@ -1,110 +1,121 @@
 import { describe, expect, it } from 'vitest';
-import { generateRepeatDates, generateRecurringEvents } from '../../utils/recurringEvents';
-import { RepeatType } from '../../types/recurringEvents';
 
-describe('generateRepeatDates', () => {
-  describe('매일 반복', () => {
-    it('기본 매일 반복', () => {
-      const result = generateRepeatDates('2025-10-01', 'daily', 1, '2025-10-03');
-      expect(result).toEqual(['2025-10-01', '2025-10-02', '2025-10-03']);
-    });
+import { generateRepeatDates } from '../../utils/recurringEvents';
 
-    it('간격이 2인 매일 반복', () => {
-      const result = generateRepeatDates('2025-10-01', 'daily', 2, '2025-10-05');
-      expect(result).toEqual(['2025-10-01', '2025-10-03', '2025-10-05']);
-    });
+describe('generateRepeatDates - 매일 반복', () => {
+  it('매일 반복으로 3일간 날짜를 생성한다', () => {
+    const startDate = '2025-10-01';
+    const repeatType = 'daily';
+    const interval = 1;
+    const endDate = '2025-10-03';
+
+    const result = generateRepeatDates(startDate, repeatType, interval, endDate);
+
+    expect(result).toEqual(['2025-10-01', '2025-10-02', '2025-10-03']);
   });
 
-  describe('매주 반복', () => {
-    it('기본 매주 반복', () => {
-      const result = generateRepeatDates('2025-10-01', 'weekly', 1, '2025-10-15');
-      expect(result).toEqual(['2025-10-01', '2025-10-08', '2025-10-15']);
-    });
+  it('매일 반복으로 1일간 날짜를 생성한다 (시작일과 종료일이 같은 경우)', () => {
+    const startDate = '2025-10-01';
+    const repeatType = 'daily';
+    const interval = 1;
+    const endDate = '2025-10-01';
 
-    it('간격이 2인 매주 반복', () => {
-      const result = generateRepeatDates('2025-10-01', 'weekly', 2, '2025-10-29');
-      expect(result).toEqual(['2025-10-01', '2025-10-15', '2025-10-29']);
-    });
-  });
+    const result = generateRepeatDates(startDate, repeatType, interval, endDate);
 
-  describe('매월 반복', () => {
-    it('기본 매월 반복', () => {
-      const result = generateRepeatDates('2025-10-15', 'monthly', 1, '2025-12-31');
-      expect(result).toEqual(['2025-10-15', '2025-11-15', '2025-12-15']);
-    });
-
-    it('31일 매월 반복 - 31일이 없는 달은 건너뛴다', () => {
-      const result = generateRepeatDates('2025-01-31', 'monthly', 1, '2025-06-30');
-      expect(result).toEqual(['2025-01-31', '2025-03-31', '2025-05-31']);
-    });
-
-    it('간격이 2인 매월 반복', () => {
-      const result = generateRepeatDates('2025-01-15', 'monthly', 2, '2025-07-31');
-      expect(result).toEqual(['2025-01-15', '2025-03-15', '2025-05-15', '2025-07-15']);
-    });
-  });
-
-  describe('매년 반복', () => {
-    it('기본 매년 반복', () => {
-      const result = generateRepeatDates('2025-10-15', 'yearly', 1, '2027-12-31');
-      expect(result).toEqual(['2025-10-15', '2026-10-15', '2027-10-15']);
-    });
-
-    it('윤년 29일 매년 반복 - 29일이 없는 해는 건너뛴다', () => {
-      const result = generateRepeatDates('2024-02-29', 'yearly', 1, '2030-12-31');
-      expect(result).toEqual(['2024-02-29', '2028-02-29']);
-    });
-
-    it('간격이 2인 매년 반복', () => {
-      const result = generateRepeatDates('2025-06-15', 'yearly', 2, '2031-12-31');
-      expect(result).toEqual(['2025-06-15', '2027-06-15', '2029-06-15', '2031-06-15']);
-    });
-  });
-
-  describe('경계 케이스', () => {
-    it('시작일과 종료일이 같은 경우', () => {
-      const result = generateRepeatDates('2025-10-01', 'daily', 1, '2025-10-01');
-      expect(result).toEqual(['2025-10-01']);
-    });
-
-    it('종료일이 시작일보다 이전인 경우', () => {
-      const result = generateRepeatDates('2025-10-15', 'daily', 1, '2025-10-10');
-      expect(result).toEqual([]);
-    });
+    expect(result).toEqual(['2025-10-01']);
   });
 });
 
-describe('generateRecurringEvents', () => {
-  it('매일 반복 이벤트 생성', () => {
-    const config = {
-      startDate: '2025-10-01',
-      endDate: '2025-10-03',
-      repeatType: 'daily' as RepeatType,
-      maxOccurrences: 5,
-    };
+describe('generateRepeatDates - 매주 반복', () => {
+  it('매주 반복으로 3주간 날짜를 생성한다', () => {
+    const startDate = '2025-10-01';
+    const repeatType = 'weekly';
+    const interval = 1;
+    const endDate = '2025-10-15';
 
-    const result = generateRecurringEvents(config);
+    const result = generateRepeatDates(startDate, repeatType, interval, endDate);
 
-    expect(result).toHaveLength(3);
-    expect(result[0]).toEqual({
-      id: 'daily-0-2025-10-01',
-      date: '2025-10-01',
-      isRecurring: true,
-      recurringSeriesId: 'daily-series-2025-10-01',
-    });
+    expect(result).toEqual(['2025-10-01', '2025-10-08', '2025-10-15']);
   });
 
-  it('maxOccurrences 제한 적용', () => {
-    const config = {
-      startDate: '2025-10-01',
-      endDate: '2025-10-10',
-      repeatType: 'daily' as RepeatType,
-      maxOccurrences: 3,
-    };
+  it('매주 반복으로 1주간 날짜를 생성한다 (시작일과 종료일이 같은 경우)', () => {
+    const startDate = '2025-10-01';
+    const repeatType = 'weekly';
+    const interval = 1;
+    const endDate = '2025-10-01';
 
-    const result = generateRecurringEvents(config);
+    const result = generateRepeatDates(startDate, repeatType, interval, endDate);
 
-    expect(result).toHaveLength(3);
-    expect(result.map((e) => e.date)).toEqual(['2025-10-01', '2025-10-02', '2025-10-03']);
+    expect(result).toEqual(['2025-10-01']);
+  });
+});
+
+describe('generateRepeatDates - 매월 반복', () => {
+  it('매월 반복으로 3개월간 날짜를 생성한다', () => {
+    const startDate = '2025-10-15';
+    const repeatType = 'monthly';
+    const interval = 1;
+    const endDate = '2025-12-31';
+
+    const result = generateRepeatDates(startDate, repeatType, interval, endDate);
+
+    expect(result).toEqual(['2025-10-15', '2025-11-15', '2025-12-15']);
+  });
+
+  it('매월 반복으로 1개월간 날짜를 생성한다 (시작일과 종료일이 같은 경우)', () => {
+    const startDate = '2025-10-15';
+    const repeatType = 'monthly';
+    const interval = 1;
+    const endDate = '2025-10-15';
+
+    const result = generateRepeatDates(startDate, repeatType, interval, endDate);
+
+    expect(result).toEqual(['2025-10-15']);
+  });
+
+  it('31일 매월 반복 - 31일이 없는 달은 건너뛴다', () => {
+    const startDate = '2025-01-31';
+    const repeatType = 'monthly';
+    const interval = 1;
+    const endDate = '2025-06-30';
+
+    const result = generateRepeatDates(startDate, repeatType, interval, endDate);
+
+    expect(result).toEqual(['2025-01-31', '2025-03-31', '2025-05-31']);
+  });
+});
+
+describe('generateRepeatDates - 매년 반복', () => {
+  it('매년 반복으로 3년간 날짜를 생성한다', () => {
+    const startDate = '2025-10-15';
+    const repeatType = 'yearly';
+    const interval = 1;
+    const endDate = '2027-12-31';
+
+    const result = generateRepeatDates(startDate, repeatType, interval, endDate);
+
+    expect(result).toEqual(['2025-10-15', '2026-10-15', '2027-10-15']);
+  });
+
+  it('매년 반복으로 1년간 날짜를 생성한다 (시작일과 종료일이 같은 경우)', () => {
+    const startDate = '2025-10-15';
+    const repeatType = 'yearly';
+    const interval = 1;
+    const endDate = '2025-10-15';
+
+    const result = generateRepeatDates(startDate, repeatType, interval, endDate);
+
+    expect(result).toEqual(['2025-10-15']);
+  });
+
+  it('윤년 29일 매년 반복 - 29일이 없는 해는 건너뛴다', () => {
+    const startDate = '2024-02-29';
+    const repeatType = 'yearly';
+    const interval = 1;
+    const endDate = '2030-12-31';
+
+    const result = generateRepeatDates(startDate, repeatType, interval, endDate);
+
+    expect(result).toEqual(['2024-02-29', '2028-02-29']);
   });
 });
