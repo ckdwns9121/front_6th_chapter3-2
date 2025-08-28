@@ -19,6 +19,8 @@ export default mergeConfig(
       globals: true,
       environment: 'jsdom',
       setupFiles: './src/setupTests.ts',
+      // Exclude Playwright E2E tests
+      exclude: ['e2e/**', '**/node_modules/**'],
       coverage: {
         reportsDirectory: './.coverage',
         reporter: ['lcov', 'json', 'json-summary'],

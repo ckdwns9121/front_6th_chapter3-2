@@ -60,11 +60,9 @@ jobs:
         with:
           node-version: 20
           cache: 'pnpm'
-      - name: Install dependencies
+      - name: Install deps & Playwright browsers
         run: |
-          rm -rf node_modules pnpm-lock.yaml
-          pnpm install --frozen-lockfile
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
-      - name: Run Playwright tests
-        run: npx playwright test tests/*.spec.ts
+          pnpm install
+          pnpm exec playwright install --with-deps
+      - name: Run Playwright e2e
+        run: npx playwright test e2e@e2e/*.spec.ts
