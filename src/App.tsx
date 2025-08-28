@@ -236,47 +236,43 @@ function App() {
                     <Typography variant="body2" fontWeight="bold">
                       {date.getDate()}
                     </Typography>
-                    {filteredEvents
-                      .filter(
-                        (event) => new Date(event.date).toDateString() === date.toDateString()
-                      )
-                      .map((event) => {
-                        const isNotified = notifiedEvents.includes(event.id);
-                        const isRecurring = event.repeat.type !== 'none';
-                        return (
-                          <Box
-                            key={event.id}
-                            sx={{
-                              p: 0.5,
-                              my: 0.5,
-                              backgroundColor: isNotified
-                                ? '#ffebee'
-                                : isRecurring
-                                ? '#e3f2fd'
-                                : '#f5f5f5',
-                              borderRadius: 1,
-                              fontWeight: isNotified ? 'bold' : 'normal',
-                              color: isNotified ? '#d32f2f' : isRecurring ? '#1976d2' : 'inherit',
-                              minHeight: '18px',
-                              width: '100%',
-                              overflow: 'hidden',
-                              border: isRecurring ? '1px solid #1976d2' : 'none',
-                            }}
-                          >
-                            <Stack direction="row" spacing={1} alignItems="center">
-                              {isNotified && <Notifications fontSize="small" />}
-                              {isRecurring && <Repeat fontSize="small" />}
-                              <Typography
-                                variant="caption"
-                                noWrap
-                                sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}
-                              >
-                                {event.title}
-                              </Typography>
-                            </Stack>
-                          </Box>
-                        );
-                      })}
+                    {getEventsForDay(filteredEvents, currentDate, date.getDate()).map((event) => {
+                      const isNotified = notifiedEvents.includes(event.id);
+                      const isRecurring = event.repeat.type !== 'none';
+                      return (
+                        <Box
+                          key={event.id}
+                          sx={{
+                            p: 0.5,
+                            my: 0.5,
+                            backgroundColor: isNotified
+                              ? '#ffebee'
+                              : isRecurring
+                              ? '#e3f2fd'
+                              : '#f5f5f5',
+                            borderRadius: 1,
+                            fontWeight: isNotified ? 'bold' : 'normal',
+                            color: isNotified ? '#d32f2f' : isRecurring ? '#1976d2' : 'inherit',
+                            minHeight: '18px',
+                            width: '100%',
+                            overflow: 'hidden',
+                            border: isRecurring ? '1px solid #1976d2' : 'none',
+                          }}
+                        >
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            {isNotified && <Notifications fontSize="small" />}
+                            {isRecurring && <Repeat fontSize="small" />}
+                            <Typography
+                              variant="caption"
+                              noWrap
+                              sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}
+                            >
+                              {event.title}
+                            </Typography>
+                          </Stack>
+                        </Box>
+                      );
+                    })}
                   </TableCell>
                 ))}
               </TableRow>
@@ -334,7 +330,7 @@ function App() {
                                 {holiday}
                               </Typography>
                             )}
-                            {getEventsForDay(filteredEvents, day).map((event) => {
+                            {getEventsForDay(filteredEvents, currentDate, day).map((event) => {
                               const isNotified = notifiedEvents.includes(event.id);
                               const isRecurring = event.repeat.type !== 'none';
                               return (

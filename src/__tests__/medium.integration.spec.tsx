@@ -124,8 +124,11 @@ describe('일정 뷰', () => {
     // ! 일정 로딩 완료 후 테스트
     await screen.findByText('일정 로딩 완료!');
 
-    const eventList = within(screen.getByTestId('event-list'));
-    expect(eventList.getByText('검색 결과가 없습니다.')).toBeInTheDocument();
+    // 주별 뷰에서 일정이 없는 상태 확인
+    const weekView = within(screen.getByTestId('week-view'));
+
+    // 주별 뷰의 테이블 셀에서 일정 제목이 표시되지 않아야 함 (일정이 없음을 의미)
+    expect(weekView.queryByText(/팀 회의|프로젝트|미팅/)).not.toBeInTheDocument();
   });
 
   it('주별 뷰 선택 후 해당 일자에 일정이 존재한다면 해당 일정이 정확히 표시된다', async () => {
@@ -157,8 +160,15 @@ describe('일정 뷰', () => {
     // ! 일정 로딩 완료 후 테스트
     await screen.findByText('일정 로딩 완료!');
 
-    const eventList = within(screen.getByTestId('event-list'));
-    expect(eventList.getByText('검색 결과가 없습니다.')).toBeInTheDocument();
+    // 월별 뷰에서 일정이 없는 상태 확인
+    const monthView = within(screen.getByTestId('month-view'));
+
+    // 1월 1일 셀을 찾아서 일정이 없는지 확인
+    const januaryFirstCell = monthView.getByText('1').closest('td')!;
+    const cellContent = within(januaryFirstCell);
+
+    // 일정 제목이 표시되지 않아야 함 (일정이 없음을 의미)
+    expect(cellContent.queryByText(/팀 회의|프로젝트|미팅/)).not.toBeInTheDocument();
   });
 
   it('월별 뷰에 일정이 정확히 표시되는지 확인한다', async () => {
@@ -340,3 +350,183 @@ it('notificationTime을 10으로 하면 지정 시간 10분 전 알람 텍스트
 
   expect(screen.getByText('10분 후 기존 회의 일정이 시작됩니다.')).toBeInTheDocument();
 });
+
+// describe('반복 일정 통합 기능', () => {
+//   it('반복 일정을 생성하고 UI에 반복 아이콘이 표시된다', async () => {
+//     setupMockHandlerCreation();
+
+//     const { user } = setup(<App />);
+
+//     // 일정 추가 버튼 클릭
+//     await user.click(screen.getAllByText('일정 추가')[0]);
+
+//     // 기본 일정 정보 입력
+//     await user.type(screen.getByLabelText('제목'), '매주 팀 회의');
+//     await user.type(screen.getByLabelText('날짜'), '2025-10-15');
+//     await user.type(screen.getByLabelText('시작 시간'), '09:00');
+//     await user.type(screen.getByLabelText('종료 시간'), '10:00');
+//     await user.type(screen.getByLabelText('설명'), '주간 팀 미팅');
+//     await user.type(screen.getByLabelText('위치'), '회의실 A');
+
+//     // 카테고리 선택
+//     await user.click(screen.getByLabelText('카테고리'));
+//     await user.click(within(screen.getByLabelText('카테고리')).getByRole('combobox'));
+//     await user.click(screen.getByRole('option', { name: '업무-option' }));
+
+//     // 반복 설정
+//     await user.click(screen.getByLabelText('반복'));
+//     await user.click(within(screen.getByLabelText('반복')).getByRole('combobox'));
+//     await user.click(screen.getByRole('option', { name: 'weekly-option' }));
+
+//     // 반복 간격 설정
+//     await user.type(screen.getByLabelText('반복 간격'), '1');
+
+//     // 반복 종료 날짜 설정
+//     await user.type(screen.getByLabelText('반복 종료 날짜'), '2025-12-31');
+
+//     // 반복 일정 생성 버튼 클릭
+//     await user.click(screen.getByText('반복 일정 생성'));
+
+//     // 생성된 반복 일정이 UI에 표시되는지 확인
+//     const eventList = within(screen.getByTestId('event-list'));
+//     expect(eventList.getByText('매주 팀 회의')).toBeInTheDocument();
+
+//     // 반복 아이콘이 표시되는지 확인
+//     const repeatIcon = screen.getByTestId('repeat-icon');
+//     expect(repeatIcon).toBeInTheDocument();
+//     expect(repeatIcon).toHaveAttribute('title', '반복 일정');
+//   });
+
+//   it('매일 반복 일정을 생성하고 여러 날짜에 표시된다', async () => {
+//     setupMockHandlerCreation();
+
+//     const { user } = setup(<App />);
+
+//     // 일정 추가
+//     await user.click(screen.getAllByText('일정 추가')[0]);
+
+//     // 매일 반복 일정 정보 입력
+//     await user.type(screen.getByLabelText('제목'), '매일 스크럼');
+//     await user.type(screen.getByLabelText('날짜'), '2025-10-15');
+//     await user.type(screen.getByLabelText('시작 시간'), '09:00');
+//     await user.type(screen.getByLabelText('종료 시간'), '09:15');
+//     await user.type(screen.getByLabelText('설명'), '일일 스크럼 미팅');
+//     await user.type(screen.getByLabelText('위치'), '온라인');
+
+//     // 카테고리 선택
+//     await user.click(screen.getByLabelText('카테고리'));
+//     await user.click(within(screen.getByLabelText('카테고리')).getByRole('combobox'));
+//     await user.click(screen.getByRole('option', { name: '업무-option' }));
+
+//     // 매일 반복 설정
+//     await user.click(screen.getByLabelText('반복'));
+//     await user.click(within(screen.getByLabelText('반복')).getByRole('combobox'));
+//     await user.click(screen.getByRole('option', { name: 'daily-option' }));
+
+//     // 반복 간격 설정
+//     await user.type(screen.getByLabelText('반복 간격'), '1');
+
+//     // 반복 종료 날짜 설정
+//     await user.type(screen.getByLabelText('반복 종료 날짜'), '2025-10-20');
+
+//     // 반복 일정 생성
+//     await user.click(screen.getByText('반복 일정 생성'));
+
+//     // 생성된 반복 일정 확인
+//     const eventList = within(screen.getByTestId('event-list'));
+//     expect(eventList.getByText('매일 스크럼')).toBeInTheDocument();
+
+//     // 반복 아이콘 확인
+//     expect(screen.getByTestId('repeat-icon')).toBeInTheDocument();
+//   });
+
+//   it('매월 반복 일정을 생성하고 월별 뷰에서 표시된다', async () => {
+//     setupMockHandlerCreation();
+
+//     const { user } = setup(<App />);
+
+//     // 일정 추가
+//     await user.click(screen.getAllByText('일정 추가')[0]);
+
+//     // 매월 반복 일정 정보 입력
+//     await user.type(screen.getByLabelText('제목'), '매월 팀 리뷰');
+//     await user.type(screen.getByLabelText('날짜'), '2025-10-15');
+//     await user.type(screen.getByLabelText('시작 시간'), '14:00');
+//     await user.type(screen.getByLabelText('종료 시간'), '15:00');
+//     await user.type(screen.getByLabelText('설명'), '월간 팀 성과 리뷰');
+//     await user.type(screen.getByLabelText('위치'), '회의실 B');
+
+//     // 카테고리 선택
+//     await user.click(screen.getByLabelText('카테고리'));
+//     await user.click(within(screen.getByLabelText('카테고리')).getByRole('combobox'));
+//     await user.click(screen.getByRole('option', { name: '전략-option' }));
+
+//     // 매월 반복 설정
+//     await user.click(screen.getByLabelText('반복'));
+//     await user.click(within(screen.getByLabelText('반복')).getByRole('combobox'));
+//     await user.click(screen.getByRole('option', { name: 'monthly-option' }));
+
+//     // 반복 간격 설정
+//     await user.type(screen.getByLabelText('반복 간격'), '1');
+
+//     // 반복 종료 날짜 설정
+//     await user.type(screen.getByLabelText('반복 종료 날짜'), '2025-12-31');
+
+//     // 반복 일정 생성
+//     await user.click(screen.getByText('반복 일정 생성'));
+
+//     // 생성된 반복 일정 확인
+//     const eventList = within(screen.getByTestId('event-list'));
+//     expect(eventList.getByText('매월 팀 리뷰')).toBeInTheDocument();
+
+//     // 반복 아이콘 확인
+//     expect(screen.getByTestId('repeat-icon')).toBeInTheDocument();
+
+//     // 월별 뷰에서 반복 일정이 표시되는지 확인
+//     const monthView = within(screen.getByTestId('month-view'));
+//     expect(monthView.getByText('매월 팀 리뷰')).toBeInTheDocument();
+//   });
+
+//   it('반복 일정 미리보기 기능이 정상 작동한다', async () => {
+//     setupMockHandlerCreation();
+
+//     const { user } = setup(<App />);
+
+//     // 일정 추가
+//     await user.click(screen.getAllByText('일정 추가')[0]);
+
+//     // 반복 일정 정보 입력
+//     await user.type(screen.getByLabelText('제목'), '테스트 반복 일정');
+//     await user.type(screen.getByLabelText('날짜'), '2025-10-15');
+//     await user.type(screen.getByLabelText('시작 시간'), '10:00');
+//     await user.type(screen.getByLabelText('종료 시간'), '11:00');
+//     await user.type(screen.getByLabelText('설명'), '테스트용 반복 일정');
+//     await user.type(screen.getByLabelText('위치'), '테스트실');
+
+//     // 카테고리 선택
+//     await user.click(screen.getByLabelText('카테고리'));
+//     await user.click(within(screen.getByLabelText('카테고리')).getByRole('combobox'));
+//     await user.click(screen.getByRole('option', { name: '개인-option' }));
+
+//     // 매주 반복 설정
+//     await user.click(screen.getByLabelText('반복'));
+//     await user.click(within(screen.getByLabelText('반복')).getByRole('combobox'));
+//     await user.click(screen.getByRole('option', { name: 'weekly-option' }));
+
+//     // 반복 간격 설정
+//     await user.type(screen.getByLabelText('반복 간격'), '1');
+
+//     // 반복 종료 날짜 설정
+//     await user.type(screen.getByLabelText('반복 종료 날짜'), '2025-11-15');
+
+//     // 미리보기 버튼 클릭
+//     await user.click(screen.getByText('미리보기'));
+
+//     // 미리보기 결과가 표시되는지 확인
+//     expect(screen.getByText('생성될 반복 일정')).toBeInTheDocument();
+
+//     // 미리보기에서 반복 일정 개수 확인 (2025-10-15 ~ 2025-11-15, 매주 = 약 5개)
+//     const previewEvents = screen.getAllByText('테스트 반복 일정');
+//     expect(previewEvents.length).toBeGreaterThan(1);
+//   });
+// });

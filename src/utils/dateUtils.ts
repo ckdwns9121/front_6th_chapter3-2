@@ -51,8 +51,103 @@ export function getWeeksAtMonth(currentDate: Date) {
   return weeks;
 }
 
-export function getEventsForDay(events: Event[], date: number): Event[] {
-  return events.filter((event) => new Date(event.date).getDate() === date);
+export function getEventsForDay(events: Event[], currentDate: Date, date: number): Event[] {
+  console.log(`[DEBUG] getEventsForDay called with date: ${date}, events count: ${events.length}`);
+
+  const result = events.filter((event) => {
+    const eventDate = new Date(event.date);
+    const eventDay = eventDate.getDate();
+
+    // 기본적으로 날짜가 일치하는지 확인 (반복이 아닌 일정)
+    if (eventDay === date && event.repeat.type === 'none') {
+      console.log(`[DEBUG] Non-recurring event matched: ${event.title} (${event.date})`);
+      return true;
+    }
+
+    // 주간 반복 일정인 경우 정확한 날짜 계산
+    if (event.repeat.type === 'weekly') {
+      // 현재 달력에서 해당 날짜의 전체 날짜 계산
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.getMonth();
+      const targetDate = new Date(currentYear, currentMonth, date);
+
+      // 시간을 제거한 순수 날짜로 비교
+      const normalizedEventDate = stripTime(eventDate);
+      const normalizedTargetDate = stripTime(targetDate);
+
+      console.log(`[DEBUG] Weekly event check: ${event.title}`);
+      console.log(
+        `[DEBUG] Event date: ${event.date} -> ${normalizedEventDate.toISOString().split('T')[0]}`
+      );
+      console.log(`[DEBUG] Target date: ${normalizedTargetDate.toISOString().split('T')[0]}`);
+
+      // 시작 날짜 이후인지 확인
+      if (normalizedTargetDate < normalizedEventDate) {
+        console.log(`[DEBUG] Target date before event start, returning false`);
+        return false;
+      }
+
+      // 종료 날짜 범위 내에 있는지 확인
+      if (event.repeat.endDate) {
+        const endDate = new Date(event.repeat.endDate);
+        const normalizedEndDate = stripTime(endDate);
+        if (normalizedTargetDate > normalizedEndDate) {
+          console.log(`[DEBUG] Target date after event end, returning false`);
+          return false;
+        }
+      }
+
+      // 정확히 7일 간격으로 나누어 떨어지는지 확인
+      const daysDiff = Math.floor(
+        (normalizedTargetDate.getTime() - normalizedEventDate.getTime()) / (24 * 60 * 60 * 1000)
+      );
+
+      console.log(`[DEBUG] Days difference: ${daysDiff}, Modulo 7: ${daysDiff % 7}`);
+
+      // 7일 간격으로 나누어 떨어져야 함
+      if (daysDiff % 7 !== 0) {
+        console.log(`[DEBUG] Not weekly interval, returning false`);
+        return false;
+      }
+
+      // 주간 간격 설정이 있는 경우 추가 검증
+      if (event.repeat.interval && event.repeat.interval > 1) {
+        const weeksDiff = daysDiff / 7;
+        if (weeksDiff % event.repeat.interval !== 0) {
+          console.log(`[DEBUG] Not matching interval, returning false`);
+          return false;
+        }
+      }
+
+      console.log(
+        `[DEBUG] Weekly event matched: ${event.title} (${event.date}) -> ${
+          normalizedTargetDate.toISOString().split('T')[0]
+        }`
+      );
+      return true;
+    }
+
+    return false;
+  });
+
+  console.log(`[DEBUG] Filtered result count: ${result.length}`);
+  console.log(
+    `[DEBUG] Result events:`,
+    result.map((e) => ({ id: e.id, title: e.title, date: e.date }))
+  );
+
+  // 중복 제거: 같은 ID를 가진 일정은 하나만 반환
+  const uniqueEvents = result.filter(
+    (event, index, self) => index === self.findIndex((e) => e.id === event.id)
+  );
+
+  console.log(`[DEBUG] Unique events count: ${uniqueEvents.length}`);
+  console.log(
+    `[DEBUG] Unique events:`,
+    uniqueEvents.map((e) => ({ id: e.id, title: e.title, date: e.date }))
+  );
+
+  return uniqueEvents;
 }
 
 export function formatWeek(targetDate: Date) {

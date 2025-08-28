@@ -143,7 +143,8 @@ describe('getEventsForDay', () => {
   ];
 
   it('특정 날짜(1일)에 해당하는 이벤트만 정확히 반환한다', () => {
-    const dayEvents = getEventsForDay(events, 1);
+    const currentDate = new Date('2025-07-01');
+    const dayEvents = getEventsForDay(events, currentDate, 1);
     expect(dayEvents).toHaveLength(2);
     expect(dayEvents[0].title).toBe('이벤트 1');
     expect(dayEvents[1].title).toBe('이벤트 2');
