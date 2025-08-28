@@ -1,32 +1,3 @@
-const findNextValidMonthWithYear = (
-  year: number,
-  month: number,
-  day: number,
-  interval: number
-): { year: number; month: number } => {
-  let nextMonth = month + interval;
-
-  while (new Date(year, nextMonth + 1, 0).getDate() < day) {
-    nextMonth += interval;
-  }
-
-  // 루프가 끝나면 누적된 nextMonth를 기준으로 실제 연·월을 단 한 번에 계산
-  const nextYear = year + Math.floor(nextMonth / 12);
-  nextMonth = nextMonth % 12;
-
-  return { year: nextYear, month: nextMonth };
-};
-
-const findNextValidYear = (year: number, month: number, day: number, interval: number): number => {
-  let nextYear = year + interval;
-
-  while (new Date(nextYear, month + 1, 0).getDate() < day) {
-    nextYear += interval;
-  }
-
-  return nextYear;
-};
-
 export const generateRepeatDates = (
   startDate: string,
   repeatType: string,
@@ -38,27 +9,60 @@ export const generateRepeatDates = (
   const start = new Date(startDate);
   const originalDay = start.getDate();
   const originalMonth = start.getMonth();
+  const originalYear = start.getFullYear();
 
-  while (start <= end) {
-    dates.push(start.toISOString().split('T')[0]);
+  // 첫 번째 날짜 추가
+  dates.push(start.toISOString().split('T')[0]);
 
+  let currentYear = originalYear;
+  let currentMonth = originalMonth;
+
+  while (true) {
     if (repeatType === 'daily') {
-      start.setDate(start.getDate() + interval);
+      const nextDate = new Date(start);
+      nextDate.setDate(nextDate.getDate() + interval * dates.length);
+      if (nextDate > end) break;
+      dates.push(nextDate.toISOString().split('T')[0]);
     } else if (repeatType === 'weekly') {
-      start.setDate(start.getDate() + 7 * interval);
+      const nextDate = new Date(start);
+      nextDate.setDate(nextDate.getDate() + 7 * interval * dates.length);
+      if (nextDate > end) break;
+      dates.push(nextDate.toISOString().split('T')[0]);
     } else if (repeatType === 'monthly') {
-      const nextMonthWithYear = findNextValidMonthWithYear(
-        start.getFullYear(),
-        start.getMonth(),
-        originalDay,
-        interval
-      );
-      start.setTime(
-        new Date(nextMonthWithYear.year, nextMonthWithYear.month, originalDay).getTime()
-      );
+      currentMonth += interval;
+      if (currentMonth >= 12) {
+        currentYear += Math.floor(currentMonth / 12);
+        currentMonth = currentMonth % 12;
+      }
+
+      // 해당 월에 지정된 일자가 존재하는지 확인
+      const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      if (originalDay > lastDayOfMonth) {
+        currentMonth += 1;
+        if (currentMonth >= 12) {
+          currentYear += Math.floor(currentMonth / 12);
+          currentMonth = currentMonth % 12;
+        }
+      }
+
+      const nextDate = new Date(currentYear, currentMonth, originalDay);
+      if (nextDate > end) break;
+      dates.push(nextDate.toISOString().split('T')[0]);
     } else if (repeatType === 'yearly') {
-      const nextYear = findNextValidYear(start.getFullYear(), originalMonth, originalDay, interval);
-      start.setTime(new Date(nextYear, originalMonth, originalDay).getTime());
+      const nextYear = currentYear + interval;
+
+      // 해당 해에 지정된 일자가 존재하는지 확인
+      const lastDayOfMonth = new Date(nextYear, originalMonth + 1, 0).getDate();
+      if (originalDay > lastDayOfMonth) {
+        // 해당 해에 해당 일자가 없으면 다음 해로 건너뛰기
+        currentYear = nextYear;
+        continue;
+      }
+
+      const nextDate = new Date(nextYear, originalMonth, originalDay);
+      if (nextDate > end) break;
+      dates.push(nextDate.toISOString().split('T')[0]);
+      currentYear = nextYear;
     }
   }
 

@@ -126,14 +126,55 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
 
   const deleteEvent = async (id: string) => {
     try {
-      const response = await fetch(`/api/events/${id}`, { method: 'DELETE' });
+      // 삭제할 이벤트를 먼저 찾기
+      const eventToDelete = events.find((event) => event.id === id);
 
-      if (!response.ok) {
-        throw new Error('Failed to delete event');
+      if (!eventToDelete) {
+        throw new Error('Event not found');
       }
 
-      await fetchEvents();
-      enqueueSnackbar('일정이 삭제되었습니다.', { variant: 'info' });
+      // 반복 일정인지 확인
+      const isRecurringEvent = eventToDelete.isRecurring && eventToDelete.recurringSeriesId;
+
+      if (isRecurringEvent) {
+        // 반복 일정인 경우: 해당 일정만 삭제 (단일 삭제)
+        const response = await fetch('/api/events-list', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            eventIds: [id], // 배열로 ID 전달
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to delete event');
+        }
+
+        // 로컬 상태에서 해당 일정만 제거
+        setEvents((prev) => prev.filter((event) => event.id !== id));
+
+        enqueueSnackbar('반복 일정이 삭제되었습니다.', { variant: 'info' });
+      } else {
+        // 일반 일정인 경우: 기존 로직 사용
+        const response = await fetch('/api/events-list', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            eventIds: [id], // 배열로 ID 전달
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to delete event');
+        }
+
+        await fetchEvents();
+        enqueueSnackbar('일정이 삭제되었습니다.', { variant: 'info' });
+      }
     } catch (error) {
       console.error('Error deleting event:', error);
       enqueueSnackbar('일정 삭제 실패', { variant: 'error' });

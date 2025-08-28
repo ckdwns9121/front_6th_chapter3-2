@@ -58,46 +58,106 @@ export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
     })
   );
 };
+
+// 전역 변수로 mockEvents 관리
+let globalMockEvents: Event[] = [];
+
 export const setupMockHandlerRepeatCreation = () => {
-  const mockEvents: Event[] = [];
+  // 기존 데이터 초기화
+  globalMockEvents = [];
+
+  // 기존 핸들러 정리 후 새로운 핸들러 등록
+  server.resetHandlers();
 
   server.use(
+    // GET /api/events - 이벤트 목록 조회
     http.get('/api/events', () => {
-      return HttpResponse.json({ events: mockEvents });
+      console.log('GET /api/events - 현재 globalMockEvents:', globalMockEvents);
+      return HttpResponse.json({ events: [...globalMockEvents] });
     }),
+
+    // POST /api/events-list - 반복 일정 생성
     http.post('/api/events-list', async ({ request }) => {
-      const { events: newEvents } = (await request.json()) as { events: Event[] };
-      console.log('newEvents:', newEvents);
-      let id = mockEvents.length + 1;
-      newEvents.forEach((event) => {
-        event.id = String(id++);
-      });
-      mockEvents.push(...newEvents);
-      console.log('mockEvents:', mockEvents);
-      return HttpResponse.json(mockEvents, { status: 201 });
+      try {
+        const { events: newEvents } = (await request.json()) as { events: Event[] };
+        console.log('POST /api/events-list - newEvents:', newEvents);
+
+        // ID 할당
+        let id = globalMockEvents.length + 1;
+        newEvents.forEach((event) => {
+          event.id = String(id++);
+        });
+
+        // globalMockEvents 배열에 새 이벤트들 추가
+        globalMockEvents.push(...newEvents);
+        console.log('POST /api/events-list - 업데이트된 globalMockEvents:', globalMockEvents);
+
+        return HttpResponse.json(newEvents, { status: 201 });
+      } catch (error) {
+        console.error('POST /api/events-list 에러:', error);
+        return new HttpResponse(null, { status: 500 });
+      }
     }),
+
+    // PUT /api/events/:id - 이벤트 수정
     http.put('/api/events/:id', async ({ params, request }) => {
-      const { id } = params;
+      try {
+        const { id } = params;
+        const updatedEvent = (await request.json()) as Event;
+        console.log('PUT /api/events/:id - 수정 요청:', { id, updatedEvent });
 
-      const updatedEvent = (await request.json()) as Event;
+        const index = globalMockEvents.findIndex((event) => event.id === id);
 
-      const index = mockEvents.findIndex((event) => event.id === id);
-
-      mockEvents[index] = {
-        ...mockEvents[index],
-        ...updatedEvent,
-        repeat: { type: 'none', interval: 0 },
-      };
-      return HttpResponse.json(mockEvents[index]);
+        if (index !== -1) {
+          // 반복 일정 수정 시: 단일 일정으로 변경
+          if (updatedEvent.repeat.type === 'none') {
+            globalMockEvents[index] = {
+              ...globalMockEvents[index],
+              ...updatedEvent,
+              isRecurring: false,
+              recurringSeriesId: undefined,
+            };
+          } else {
+            // 일반 일정 수정
+            globalMockEvents[index] = {
+              ...globalMockEvents[index],
+              ...updatedEvent,
+            };
+          }
+          console.log('PUT /api/events/:id - 업데이트된 이벤트:', globalMockEvents[index]);
+          return HttpResponse.json(globalMockEvents[index]);
+        } else {
+          return new HttpResponse(null, { status: 404 });
+        }
+      } catch (error) {
+        console.error('PUT /api/events/:id 에러:', error);
+        return new HttpResponse(null, { status: 500 });
+      }
     }),
-    http.delete('/api/events/:id', ({ params }) => {
-      const { id } = params;
-      const index = mockEvents.findIndex((event) => event.id === id);
 
-      mockEvents.splice(index, 1);
-      return new HttpResponse(null, { status: 204 });
+    // DELETE /api/events-list - 이벤트 삭제 (여러 개 한 번에)
+    http.delete('/api/events-list', async ({ request }) => {
+      try {
+        const { eventIds } = (await request.json()) as { eventIds: string[] };
+        console.log('DELETE /api/events-list - 삭제 요청:', { eventIds });
+
+        // globalMockEvents에서 해당 ID들을 가진 이벤트들 제거
+        const initialLength = globalMockEvents.length;
+        globalMockEvents = globalMockEvents.filter((event) => !eventIds.includes(event.id));
+        const deletedCount = initialLength - globalMockEvents.length;
+
+        console.log('DELETE /api/events-list - 삭제된 이벤트 수:', deletedCount);
+        console.log('DELETE /api/events-list - 업데이트된 globalMockEvents:', globalMockEvents);
+
+        return new HttpResponse(null, { status: 204 });
+      } catch (error) {
+        console.error('DELETE /api/events-list 에러:', error);
+        return new HttpResponse(null, { status: 500 });
+      }
     })
   );
+
+  console.log('setupMockHandlerRepeatCreation 완료 - 핸들러 등록됨');
 };
 export const setupMockHandlerUpdating = ({ isRepeat = false } = {}) => {
   const mockEvents: Event[] = isRepeat
